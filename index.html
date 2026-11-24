@@ -128,7 +128,10 @@ input[type=range]{width:100%;accent-color:var(--heat);margin-top:14px}
 .row{display:flex;gap:10px;align-items:center;margin:10px 0}
 .row>*{flex:1}
 label.f{display:block;font-size:12px;color:var(--mut);margin:12px 0 5px}
-#tKind button{white-space:nowrap}
+#tKind button{white-space:nowrap;padding-left:4px;padding-right:4px}
+@media (max-width:400px){#tKind button{font-size:13.5px}}
+.snext{background:var(--card2);border-radius:12px;padding:10px 12px;margin:0 0 12px;font-size:14px;line-height:1.4}.snext b{font-weight:600}
+.nx{color:var(--mut);font-size:12px;margin-top:2px}
 .tsel{display:flex;align-items:center;gap:6px}.tsel select{flex:1;text-align:center;text-align-last:center}.tsel b{font-size:20px;color:var(--mut)}
 input[type=text],input[type=password],input[type=number],input[type=time],select{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px;outline:none;min-height:46px}
 input:focus,select:focus{border-color:var(--focus)}
@@ -343,7 +346,7 @@ themeApply();
     <h2>Vorwahl-Timer</h2>
     <div id="timerActive" style="display:none"></div>
     <div id="timerForm">
-      <div class="seg" id="tKind"><button data-k="dep" class="act">Warm um</button><button data-k="in">Start in</button><button data-k="at">Start um</button></div>
+      <div class="seg" id="tKind"><button data-k="dep" class="act">Warm um …</button><button data-k="in">Start in …</button><button data-k="at">Start um …</button></div>
       <div id="tIn" style="display:none">
         <div class="chips" style="margin-top:12px" id="inChips"></div>
         <div class="row"><div><label class="f">Stunden</label><input type="number" id="inH" min="0" max="167" value="1"></div><div><label class="f">Minuten</label><input type="number" id="inM" min="0" max="59" step="5" value="0"></div></div>
@@ -365,6 +368,7 @@ themeApply();
 <section class="tab" id="tab-plan">
   <div class="card">
     <h2>Wochenplan <button class="btn small" id="addSched">+ Neu</button></h2>
+    <div id="schedNext" class="snext" hidden></div>
     <div id="schedList"></div>
   </div>
   <p class="hint" style="padding:0 6px">Der Wochenplan läuft direkt auf dem ESP32 – das Handy muss nicht verbunden sein. Voraussetzung ist eine gültige Uhrzeit (NTP über WLAN).</p>
@@ -555,6 +559,7 @@ themeApply();
   <label class="f" id="shTimeLbl">Abfahrtszeit</label><input type="time" id="shTime" value="06:30">
   <label class="f">Wochentage</label>
   <div class="daypick" id="shDays"></div>
+  <p class="hint" id="shNext"></p>
   <div class="row" style="margin-top:8px"><button class="btn small sec" data-preset="31">Mo–Fr</button><button class="btn small sec" data-preset="96">Sa–So</button><button class="btn small sec" data-preset="127">Täglich</button></div>
   <div id="shStartOpts">
   <label class="f">Betriebsart</label>
@@ -762,7 +767,7 @@ function render(){
   if(t.active){$('timerActive').style.display='block';$('timerForm').style.display='none';
     let tl;
     if(t.depart){const p=S.preheat||{};const dep=t.in>=0?new Date(Date.now()+(t.in-age)*1000):null;const st=dep&&p.minutes?new Date(dep-p.minutes*60000):null;
-      tl=`<b>Warm um ${t.at||'?'}</b><span>${t.target} °C · ${st?'Start ca. '+pad(st.getHours())+':'+pad(st.getMinutes())+' ('+p.minutes+' min bei '+fmtT(p.temp)+')':preText()}</span>`}
+      tl=`<b>Warm um ${t.at||'?'}${t.in>=0?' · in '+fmtSec(Math.max(0,t.in-age)):''}</b><span>${t.target} °C · ${st?'Start ca. '+pad(st.getHours())+':'+pad(st.getMinutes())+' ('+p.minutes+' min bei '+fmtT(p.temp)+')':preText()}</span>`}
     else tl=`<b>${t.at?'um '+t.at:'Start geplant'}</b><span>${t.in>=0?'in '+fmtSec(Math.max(0,t.in-age))+' · ':''}${t.mode=='vent'?'Lüften':'Heizen'} · ${durLabel(t.duration)}${t.mode=='heat'?' · '+t.target+' °C':''}</span>`;
     $('timerActive').innerHTML=`<div class="tactive"><div class="ic ${t.mode=='vent'?'v':''}">${t.mode=='vent'?FAN:FLAME}</div><div class="tx">${tl}</div><button class="btn small danger" id="tCancel">Löschen</button></div>`;
     $('tCancel').onclick=async()=>{await api('/api/timer',{cancel:true});toast('Timer gelöscht');refresh()};
@@ -833,12 +838,13 @@ function timeSelect(id,step=5){const inp=$(id);const w=document.createElement('d
   const fire=()=>{inp.dispatchEvent(new Event('input'));inp.dispatchEvent(new Event('change'))};hs.onchange=fire;ms.onchange=fire;
   const lbl=document.querySelector(`label[for="${id}"]`);if(lbl)lbl.htmlFor='';}
 ['atTime','shTime','mAt'].forEach(id=>timeSelect(id));
+$('shTime').addEventListener('change',()=>shNextUI());
 function tAtDate(){const [h,m]=$('atTime').value.split(':').map(Number);const n=new Date(),t=new Date();t.setHours(h,m,0,0);if(t<=n)t.setDate(t.getDate()+1);return t}
 function preText(){const p=S&&S.preheat;if(!p)return'';return p.minutes?`ca. ${p.minutes} min Vorheizen bei ${fmtT(p.temp)} (${p.source})`:`bei ${fmtT(p.temp)} kein Vorheizen nötig`}
 function tPreview(){const m=tMinutes();if(m<1){$('tPreview').textContent='';return}
   const at=tKind=='in'?new Date(Date.now()+m*60000):tAtDate();const tom=at.getDate()!=new Date().getDate();
   if(tKind=='dep'){const p=S&&S.preheat;const st=p&&p.minutes?new Date(at-p.minutes*60000):null;
-    $('tPreview').textContent=`Warm ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr, ${tgt} °C`+(st?` · Start ca. ${pad(st.getHours())}:${pad(st.getMinutes())} (${preText()})`:p?` · ${preText()}`:'')+'. Die Startzeit wird bis zuletzt an die aktuelle Temperatur angepasst.';return}
+    $('tPreview').textContent=`Warm ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr (in ${fmtSec(Math.round((at-Date.now())/1000))}), ${tgt} °C`+(st?` · Start ca. ${pad(st.getHours())}:${pad(st.getMinutes())} (${preText()})`:p?` · ${preText()}`:'')+'. Die Startzeit wird bis zuletzt an die aktuelle Temperatur angepasst.';return}
   $('tPreview').textContent=`Start ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr (in ${fmtSec(m*60)})`}
 ['inH','inM','atTime','tDur'].forEach(i=>$(i).oninput=tPreview);
 $('tSet').onclick=async()=>{const m=tMinutes();if(m<1)return toast('Bitte Startzeit wählen');
@@ -846,13 +852,32 @@ $('tSet').onclick=async()=>{const m=tMinutes();if(m<1)return toast('Bitte Startz
 
 /* ---------- Wochenplan ---------- */
 async function loadSched(){try{const r=await api('/api/schedule');sched=r.entries||[];renderSched()}catch(e){}}
+// Nächstes Vorkommen eines Wochenplan-Eintrags (Mo = Bit 0); bei "Warm um" zusätzlich der geschätzte Start
+const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+function schedNext(s){if(!s.days)return null;const now=new Date();
+  for(let d=0;d<8;d++){const t=new Date(now);t.setDate(now.getDate()+d);t.setHours(s.hour,s.minute,0,0);
+    if(t<=now||!(s.days>>((t.getDay()+6)%7)&1))continue;
+    const pm=s.kind=='depart'&&S&&S.preheat?S.preheat.minutes||0:0;return{at:t,start:new Date(t-pm*60000),pm}}return null}
+function fmtIn(sec){sec=Math.max(0,Math.round(sec));const d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);
+  return d?`${d} ${d==1?'Tag':'Tage'} ${h} h ${m} min`:h?`${h} h ${m} min`:`${m} min`}
+function fmtDay(t){const n=new Date(),tm=new Date(n);tm.setDate(n.getDate()+1);
+  return t.toDateString()==n.toDateString()?'heute':t.toDateString()==tm.toDateString()?'morgen':`${WD[t.getDay()]}, ${t.getDate()}.${t.getMonth()+1}.`}
+function nextText(s,short){const n=schedNext(s);if(!n)return'';const st=n.start;
+  if(short)return 'Nächstes Mal '+fmtDay(n.at)+(s.kind=='depart'&&n.pm?`, Start ca. ${pad(st.getHours())}:${pad(st.getMinutes())}`:'')+` · in ${fmtIn((st-Date.now())/1000)}`;
+  return s.kind=='depart'?`Warm ${fmtDay(n.at)} um ${pad(n.at.getHours())}:${pad(n.at.getMinutes())}`+(n.pm?` · Start ca. ${pad(st.getHours())}:${pad(st.getMinutes())}`:'')+` · in ${fmtIn((st-Date.now())/1000)}`
+    :`Start ${fmtDay(st)} um ${pad(st.getHours())}:${pad(st.getMinutes())} · in ${fmtIn((st-Date.now())/1000)}`}
+function renderSchedNext(){const e=$('schedNext');let best=null;
+  sched.forEach(s=>{if(!s.enabled)return;const n=schedNext(s);if(n&&(!best||n.start<best.n.start))best={s,n}});
+  e.hidden=!best;if(best)e.innerHTML='<b>Nächster Start:</b> '+nextText(best.s)}
+setInterval(()=>{if(sched.length&&$('tab-plan').classList.contains('act'))renderSched()},30000);
 function renderSched(){
   const L=$('schedList');
+  renderSchedNext();
   if(!sched.length){L.innerHTML='<div class="empty">Noch keine Einträge.<br>Mit „+ Neu“ z.B. werktags 6:30 Uhr vorheizen.</div>';return}
   const order=sched.map((s,i)=>[s,i]).sort((a,b)=>(a[0].hour*60+a[0].minute)-(b[0].hour*60+b[0].minute));
   L.innerHTML=order.map(([s,i])=>`<div class="sitem ${s.enabled?'':'dis'}"><div class="t">${pad(s.hour)}:${pad(s.minute)}</div>
    <div class="meta" data-i="${i}"><div class="days">${DAYS.map((d,k)=>`<i class="${s.days>>k&1?'on':''}">${d}</i>`).join('')}</div>
-   <div class="sub">${s.kind=='depart'?`<span class="heat-c">Warm um</span> · ${s.target} °C · Start automatisch`:`<span class="${s.mode=='heat'?'heat-c':'vent-c'}">Start: ${s.mode=='heat'?'Heizen':'Lüften'}</span> · ${durLabel(s.duration)}${s.mode=='heat'?' · '+s.target+' °C':''}`}</div></div>
+   <div class="sub">${s.kind=='depart'?`<span class="heat-c">Warm um</span> · ${s.target} °C · Start automatisch`:`<span class="${s.mode=='heat'?'heat-c':'vent-c'}">Start: ${s.mode=='heat'?'Heizen':'Lüften'}</span> · ${durLabel(s.duration)}${s.mode=='heat'?' · '+s.target+' °C':''}`}</div>${s.enabled&&s.days?`<div class="nx">${nextText(s,true)}</div>`:''}</div>
    <label class="toggle"><input type="checkbox" data-t="${i}" ${s.enabled?'checked':''}><span></span></label>
    <button class="del" data-del="${i}" title="Eintrag löschen" aria-label="Eintrag löschen"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button></div>`).join('');
   L.querySelectorAll('.meta').forEach(m=>m.onclick=()=>openSheet(+m.dataset.i));
@@ -870,12 +895,13 @@ function openSheet(i){
   $('shMode').querySelectorAll('button').forEach(b=>b.className=b.dataset.m==ed.mode?'act '+(ed.mode=='heat'?'h':'v'):'');
   renderDays();$('sheet').classList.add('open');$('sheetBg').classList.add('open')}
 function closeSheet(){$('sheet').classList.remove('open');$('sheetBg').classList.remove('open')}
+function shNextUI(){const [h,m]=$('shTime').value.split(':').map(Number);const t=nextText({...ed,hour:h,minute:m});$('shNext').textContent=t?'Nächstes Mal: '+t:'Mindestens einen Tag wählen.'}
 function renderDays(){$('shDays').innerHTML=DAYS.map((d,k)=>`<button class="${ed.days>>k&1?'act':''}" data-k="${k}">${d}</button>`).join('');
-  $('shDays').querySelectorAll('button').forEach(b=>b.onclick=()=>{ed.days^=1<<b.dataset.k;renderDays()})}
+  $('shDays').querySelectorAll('button').forEach(b=>b.onclick=()=>{ed.days^=1<<b.dataset.k;renderDays()});shNextUI()}
 document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{ed.days=+b.dataset.preset;renderDays()});
 seg('shMode',m=>ed.mode=m);
 function shKindUI(){$('shKind').querySelectorAll('button').forEach(b=>b.className=b.dataset.k==ed.kind?'act':'');
-  const d=ed.kind=='depart';$('shStartOpts').style.display=d?'none':'block';$('shDepHint').style.display=d?'block':'none';$('shTimeLbl').textContent=d?'Abfahrtszeit':'Startzeit'}
+  const d=ed.kind=='depart';$('shStartOpts').style.display=d?'none':'block';$('shDepHint').style.display=d?'block':'none';$('shTimeLbl').textContent=d?'Abfahrtszeit':'Startzeit';shNextUI()}
 seg('shKind',k=>{ed.kind=k;if(k=='depart')ed.mode='heat';shKindUI()});
 $('shTm').onclick=()=>{ed.target=Math.max(5,ed.target-1);$('shTgt').textContent=ed.target};
 $('shTp').onclick=()=>{ed.target=Math.min(35,ed.target+1);$('shTgt').textContent=ed.target};
