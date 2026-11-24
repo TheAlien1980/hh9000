@@ -128,6 +128,8 @@ input[type=range]{width:100%;accent-color:var(--heat);margin-top:14px}
 .row{display:flex;gap:10px;align-items:center;margin:10px 0}
 .row>*{flex:1}
 label.f{display:block;font-size:12px;color:var(--mut);margin:12px 0 5px}
+#tKind button{white-space:nowrap}
+.tsel{display:flex;align-items:center;gap:6px}.tsel select{flex:1;text-align:center;text-align-last:center}.tsel b{font-size:20px;color:var(--mut)}
 input[type=text],input[type=password],input[type=number],input[type=time],select{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px;outline:none;min-height:46px}
 input:focus,select:focus{border-color:var(--focus)}
 .btn{background:var(--btn-bg);color:var(--btn-fg);border:0;border-radius:14px;padding:14px;font-weight:700;width:100%;cursor:pointer}
@@ -341,7 +343,7 @@ themeApply();
     <h2>Vorwahl-Timer</h2>
     <div id="timerActive" style="display:none"></div>
     <div id="timerForm">
-      <div class="seg" id="tKind"><button data-k="dep" class="act">Warm um …</button><button data-k="in">Start in …</button><button data-k="at">Start um …</button></div>
+      <div class="seg" id="tKind"><button data-k="dep" class="act">Warm um</button><button data-k="in">Start in</button><button data-k="at">Start um</button></div>
       <div id="tIn" style="display:none">
         <div class="chips" style="margin-top:12px" id="inChips"></div>
         <div class="row"><div><label class="f">Stunden</label><input type="number" id="inH" min="0" max="167" value="1"></div><div><label class="f">Minuten</label><input type="number" id="inM" min="0" max="59" step="5" value="0"></div></div>
@@ -817,6 +819,20 @@ seg('tMode',m=>{tMode=m;tPreview()});
 function tMinutes(){
   if(tKind=='in')return(+$('inH').value||0)*60+(+$('inM').value||0);
   return Math.ceil((tAtDate()-new Date())/60000)}
+// Eigene Uhrzeit-Auswahl statt <input type="time">: Das Uhrzeit-Fenster von Android
+// wird bei großer Schrift abgeschnitten ("Festlegen" nicht erreichbar). .value bleibt "HH:MM".
+function timeSelect(id,step=5){const inp=$(id);const w=document.createElement('div');w.className='tsel';
+  const hs=document.createElement('select'),ms=document.createElement('select');
+  hs.setAttribute('aria-label','Stunde');ms.setAttribute('aria-label','Minute');
+  for(let h=0;h<24;h++)hs.add(new Option(pad(h),pad(h)));
+  const fillM=extra=>{ms.innerHTML='';for(let m=0;m<60;m+=step)ms.add(new Option(pad(m),pad(m)));
+    if(extra!=null&&extra%step){ms.add(new Option(pad(extra),pad(extra)));[...ms.options].sort((a,b)=>a.value-b.value).forEach(o=>ms.add(o))}};
+  const set=v=>{const [h,m]=String(v||'00:00').split(':').map(Number);fillM(m);hs.value=pad(h||0);ms.value=pad(m||0)};
+  const init=inp.value;inp.type='hidden';inp.after(w);w.append(hs,document.createElement('b'),ms);w.children[1].textContent=':';
+  Object.defineProperty(inp,'value',{get:()=>hs.value+':'+ms.value,set,configurable:true});set(init);
+  const fire=()=>{inp.dispatchEvent(new Event('input'));inp.dispatchEvent(new Event('change'))};hs.onchange=fire;ms.onchange=fire;
+  const lbl=document.querySelector(`label[for="${id}"]`);if(lbl)lbl.htmlFor='';}
+['atTime','shTime','mAt'].forEach(id=>timeSelect(id));
 function tAtDate(){const [h,m]=$('atTime').value.split(':').map(Number);const n=new Date(),t=new Date();t.setHours(h,m,0,0);if(t<=n)t.setDate(t.getDate()+1);return t}
 function preText(){const p=S&&S.preheat;if(!p)return'';return p.minutes?`ca. ${p.minutes} min Vorheizen bei ${fmtT(p.temp)} (${p.source})`:`bei ${fmtT(p.temp)} kein Vorheizen nötig`}
 function tPreview(){const m=tMinutes();if(m<1){$('tPreview').textContent='';return}
