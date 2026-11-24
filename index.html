@@ -1,0 +1,1208 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Heizmeister Hagena 9000</title>
+<meta name="apple-mobile-web-app-title" content="Heizmeister">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{--app-w:560px;--r:20px;color-scheme:dark;
+/* Dunkel (Standard, echtes Schwarz) */
+--bg:#000;--bg-img:none;--card:#0c0c0d;--card2:#151517;--line:#1f1f22;--txt:#f4f4f5;--mut:#8b8b92;--dim:#55555c;
+--heat:#ff6b1a;--heat2:#ff9a3c;--vent:#33a6ff;--ok:#33d17a;--bad:#ff4d4f;--warn:#ffc857;
+--btn-bg:#fff;--btn-fg:#000;--press:#222;--focus:#555;--seg-act:#2a2a2e;--toggle-off:#2a2a2e;--mbtn-off:#444;
+--danger-line:#3a1416;--danger-press:#1d0b0b;--tactive-bg:linear-gradient(135deg,#1a0f05,#0c0c0d);--tactive-line:#3a2310;
+--overlay:rgba(0,0,0,.7);--sheet:#0c0c0d;--grab:#333;--nav-bg:rgba(0,0,0,.92);--toast-bg:#1c1c1f;--toast-line:#333;--toast-fg:#f4f4f5;
+--pre-bg:#070708;--pre-fg:#bdbdc4;--banner-bg:#1d0b0b;--banner-line:#4a1717;--banner-fg:#ffb3b3;
+--demo-bg:#101a26;--demo-line:#1b3655;--demo-fg:#9fcbff;--wbox-bg:#1f1606;--wbox-line:#4d3510;--wbox-fg:#ffd38a;
+--ring-track:#1a1a1c;--ring-off:#3a3a3e;--glow:.35;
+--ch-ax:#8b8b92;--ch-grid:#232327;--ch-base:#3a3a3e;--ch-cross:#ffffff;--ch-ring:#0c0c0d;--ch-volt:#c9c9cf;--tip-bg:#1c1c1f;--tip-line:#333}
+/* Hell: fröhlich, sonnig */
+:root[data-theme="light"]{color-scheme:light;
+--bg:#f3f7fc;--bg-img:radial-gradient(700px 500px at 110% 110%,#dceeff 0%,rgba(220,238,255,0) 70%);
+--card:#ffffff;--card2:#f1f5fa;--line:#dfe7f1;--txt:#14202e;--mut:#5b6b7c;--dim:#9aa7b5;
+--heat:#ff6a13;--heat2:#ff9a3c;--vent:#1d8cf0;--ok:#16a35f;--bad:#e23d42;--warn:#c98b00;
+--btn-bg:#14202e;--btn-fg:#ffffff;--press:#e6edf5;--focus:#8fb0d3;--seg-act:#ffffff;--toggle-off:#cfd8e3;--mbtn-off:#9aa7b5;
+--danger-line:#f3c4c6;--danger-press:#fde8e8;--tactive-bg:linear-gradient(135deg,#fff1e2,#ffffff);--tactive-line:#ffd6ad;
+--overlay:rgba(20,32,46,.35);--sheet:#ffffff;--grab:#cfd8e3;--nav-bg:rgba(255,255,255,.92);--toast-bg:#14202e;--toast-line:#14202e;--toast-fg:#ffffff;
+--pre-bg:#f6f9fc;--pre-fg:#3b4a5a;--banner-bg:#fff0f0;--banner-line:#f5c2c4;--banner-fg:#b4232a;
+--demo-bg:#e8f2ff;--demo-line:#bcd8fb;--demo-fg:#1d5fae;--wbox-bg:#fff6e0;--wbox-line:#ffd88a;--wbox-fg:#7a5000;
+--ring-track:#e8eef5;--ring-off:#c5d0dc;--glow:.22;
+--ch-ax:#6b7a8a;--ch-grid:#e6ecf3;--ch-base:#c5d0dc;--ch-cross:#14202e;--ch-ring:#ffffff;--ch-volt:#4b5a6b;--tip-bg:#ffffff;--tip-line:#dfe7f1}
+:root[data-theme="light"] .card{box-shadow:0 1px 2px rgba(20,32,46,.04),0 6px 20px rgba(20,32,46,.05)}
+:root[data-theme="light"] .seg button.act:not(.h):not(.v){box-shadow:0 1px 3px rgba(20,32,46,.15)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}  /* "hidden" muss immer gewinnen, auch gegen display:flex */
+html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{background:var(--bg-img),var(--bg);background-attachment:fixed;padding:env(safe-area-inset-top) 0 calc(78px + env(safe-area-inset-bottom))}
+button,input,select{font:inherit;color:inherit}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:var(--app-w);margin:0 auto;padding:16px 18px 6px}
+.brand{display:flex;align-items:center;min-width:0;position:relative}
+.hright{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.ver{font:500 11px/1.3 system-ui,sans-serif;color:var(--dim);opacity:.8;background:none;border:0;padding:0;cursor:pointer;letter-spacing:.3px;font-variant-numeric:tabular-nums}
+:root:not([data-theme="light"]) .ver{opacity:.6}  /* im Dark Mode etwas dunkler */
+.ver:hover{color:var(--mut);opacity:1;text-decoration:underline}
+header h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:20px;margin:0;font-weight:700;letter-spacing:.2px}
+/* Überschrift wie Lagerfeuer: Schrift mit Feuerverlauf und aufsteigenden Flammenzungen (reines CSS) */
+:root{--fire-a:#d94e00;--fire-b:#ff7a00;--fire-c:#ffa31f;--tongue:#ffe680;--tongue2:#fff6c8}
+:root[data-theme="light"]{--fire-a:#b84200;--fire-b:#e06400;--fire-c:#f08a00;--tongue:#ffb000;--tongue2:#ffd25a}
+header h1{color:var(--fire-b);padding:4px 2px 2px;margin:-4px -2px -2px;
+  /* vier Ebenen mit Flammenzungen, je eigene Kachelhöhe = eigene Steiggeschwindigkeit, nahtlos wiederholt */
+  background-image:
+    radial-gradient(ellipse 22% 62% at 30% 100%,var(--tongue2),rgba(255,230,128,0) 72%),
+    radial-gradient(ellipse 18% 56% at 72% 100%,var(--tongue),rgba(255,230,128,0) 72%),
+    radial-gradient(ellipse 20% 66% at 50% 100%,var(--tongue2),rgba(255,230,128,0) 72%),
+    radial-gradient(ellipse 15% 52% at 18% 100%,var(--tongue),rgba(255,230,128,0) 72%),
+    linear-gradient(0deg,var(--fire-a) 0%,var(--fire-b) 45%,var(--fire-c) 100%);
+  background-size:5.2em 1.9em,6.4em 1.6em,4.6em 2.3em,7.3em 1.4em,100% 100%;background-repeat:repeat;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  animation:fireTongues 1.8s linear infinite}
+@keyframes fireTongues{
+  0%{background-position:0 0,1.3em 0,2.6em 0,3.9em 0,0 0}
+  100%{background-position:0 -1.9em,1.3em -1.6em,2.6em -2.3em,3.9em -1.4em,0 0}}
+@media (prefers-reduced-motion:reduce){header h1{animation:none}}
+@media (max-width:360px){header h1{font-size:17px;letter-spacing:0}.ver{font-size:10px}header{padding-left:14px;padding-right:14px}}
+.conn{flex:none;display:flex;align-items:center;gap:8px;color:var(--mut);font-size:13px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--dim)}
+.dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}.dot.off{background:var(--bad)}
+main{max-width:var(--app-w);margin:0 auto;padding:0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:12px 0}
+.card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:0 0 12px;display:flex;justify-content:space-between;align-items:center}
+.tab{display:none}.tab.act{display:block}
+/* Status */
+.hero{display:flex;flex-direction:column;align-items:center;padding:22px 16px 18px}
+.heroTop{display:grid;grid-template-columns:minmax(0,112px) auto minmax(0,112px);justify-content:center;align-items:center;gap:12px;width:100%}
+.ring{position:relative;width:clamp(168px,50vw,210px);aspect-ratio:1}
+.ring>svg{position:absolute;inset:0;transform:rotate(135deg)}  /* nur der Bogen, nicht die Symbole */
+.ring .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.big{font-size:clamp(40px,12vw,52px);font-weight:300;letter-spacing:-2px;line-height:1}
+.big small{font-size:22px;color:var(--mut);margin-left:2px}
+.lbl{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-top:6px}
+.tgt{margin-top:8px;font-size:14px;color:var(--mut)}
+#arc.pulse{animation:arcPulse 1.6s ease-in-out infinite}
+@keyframes arcPulse{0%,100%{stroke-opacity:.18}50%{stroke-opacity:.55}}
+@media (prefers-reduced-motion:reduce){#arc.pulse{animation:none;stroke-opacity:.35}}
+/* Status unten im Ring */
+.ring .tgt{margin-top:3px;font-size:13px}
+.state{margin-top:6px;font-size:12.5px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:4px;max-width:140px;line-height:1.2}
+.state>span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.state svg{width:13px;height:13px;flex:none}
+.rem{color:var(--mut);font-size:11.5px;margin-top:1px;min-height:14px}
+.halTxt{margin-top:12px;color:#ff3b30;font:600 15px/1.35 ui-monospace,Menlo,Consolas,monospace;text-align:center;min-height:42px;max-width:300px}
+.heat-c{color:var(--heat)}.vent-c{color:var(--vent)}
+.running.heat .ring{filter:drop-shadow(0 0 22px rgba(255,107,26,var(--glow)))}
+.running.vent .ring{filter:drop-shadow(0 0 22px rgba(51,166,255,var(--glow)))}
+.spin{animation:spin 1.6s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.flick{animation:fl 1.2s ease-in-out infinite}@keyframes fl{50%{opacity:.55;transform:scale(.92)}}
+/* Kacheln links und rechts vom Ring, je drei untereinander */
+.stats.side{display:flex;flex-direction:column;gap:8px;min-width:0}
+.stat{background:var(--card2);border-radius:14px;padding:9px 4px;text-align:center;min-width:0}
+.stat b{display:block;font-size:15px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}.stat>span{font-size:11px;color:var(--mut)}
+@media (max-width:360px){.ring{width:156px}.big{font-size:36px}.ring .tgt,#outside{font-size:11px!important}.state{font-size:11px;max-width:118px}.rem{font-size:10.5px}}
+@media (max-width:380px){.heroTop{gap:6px}.stats.side{gap:6px}.stat{padding:8px 2px}.stat b{font-size:13px}.stat>span{font-size:10px}}
+/* Modes */
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mbtn{background:var(--card2);border:1px solid var(--line);border-radius:18px;padding:16px 6px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-weight:600;transition:.2s}
+.mbtn svg{width:28px;height:28px}
+.mbtn:active{transform:scale(.97)}
+.mbtn.heat.act{background:linear-gradient(160deg,#ff7a1f,#d9480f);border-color:#ff7a1f;color:#fff;box-shadow:0 6px 24px rgba(255,107,26,.35)}
+.mbtn.vent.act{background:linear-gradient(160deg,#3aa8ff,#1668d6);border-color:#3aa8ff;color:#fff;box-shadow:0 6px 24px rgba(51,166,255,.3)}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.chip{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 4px;text-align:center;cursor:pointer;font-weight:600;font-size:14px;transition:.15s}
+.chip.act{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}
+.chip.wide{grid-column:span 2}
+/* Stepper */
+.stepper{display:flex;align-items:center;justify-content:space-between}
+.sbtn{width:56px;height:56px;border-radius:50%;background:var(--card2);border:1px solid var(--line);font-size:28px;line-height:1;cursor:pointer}
+.sbtn:active{background:var(--press)}
+.sval{font-size:42px;font-weight:300}.sval small{font-size:18px;color:var(--mut)}
+input[type=range]{width:100%;accent-color:var(--heat);margin-top:14px}
+/* Forms */
+.row{display:flex;gap:10px;align-items:center;margin:10px 0}
+.row>*{flex:1}
+label.f{display:block;font-size:12px;color:var(--mut);margin:12px 0 5px}
+input[type=text],input[type=password],input[type=number],input[type=time],select{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px;outline:none;min-height:46px}
+input:focus,select:focus{border-color:var(--focus)}
+.btn{background:var(--btn-bg);color:var(--btn-fg);border:0;border-radius:14px;padding:14px;font-weight:700;width:100%;cursor:pointer}
+.btn.sec{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--danger-line)}
+.btn.small{padding:9px 14px;width:auto;font-size:13px;border-radius:11px}
+.seg{display:flex;background:var(--card2);border-radius:12px;padding:3px;border:1px solid var(--line)}
+.seg button{flex:1;background:none;border:0;padding:10px;border-radius:9px;font-weight:600;cursor:pointer;color:var(--mut)}
+.seg button.act{background:var(--seg-act);color:var(--txt)}
+.seg button.act.h{background:var(--heat);color:#fff}.seg button.act.v{background:var(--vent);color:#fff}
+.toggle{position:relative;width:50px;height:30px;flex:none}
+.toggle input{opacity:0;width:0;height:0}
+.toggle span{position:absolute;inset:0;background:var(--toggle-off);border-radius:30px;transition:.2s;cursor:pointer}
+.toggle span:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+span{background:var(--ok)}.toggle input:checked+span:before{transform:translateX(20px)}
+.hint{font-size:12px;color:var(--mut);margin:8px 0 0}
+/* Timer */
+.tactive{display:flex;align-items:center;gap:14px;background:var(--tactive-bg);border:1px solid var(--tactive-line);border-radius:16px;padding:14px}
+.tactive .ic{width:44px;height:44px;border-radius:50%;background:rgba(255,107,26,.15);display:flex;align-items:center;justify-content:center;color:var(--heat);flex:none}
+.tactive .ic.v{background:rgba(51,166,255,.15);color:var(--vent)}
+.tactive .tx{flex:1}.tactive b{font-size:20px;display:block}.tactive span{color:var(--mut);font-size:13px}
+/* Schedule */
+.sitem{display:flex;align-items:center;gap:9px;padding:14px 0;border-bottom:1px solid var(--line)}
+.sitem:last-child{border-bottom:0}
+.sitem .t{font-size:24px;font-weight:300;min-width:64px}
+.sitem .meta{flex:1;min-width:0;cursor:pointer}
+.days{display:flex;gap:1px;margin-bottom:3px}
+.days i{font-style:normal;font-size:11px;width:17px;text-align:center;color:var(--dim)}
+.days i.on{color:var(--txt);font-weight:700}
+.sitem .sub{font-size:12px;color:var(--mut)}
+.del{width:36px;height:36px;flex:none;border-radius:12px;border:1px solid var(--danger-line);background:transparent;color:var(--bad);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.del svg{width:19px;height:19px}.del:active{background:var(--danger-press)}
+.sitem.dis .t,.sitem.dis .meta{opacity:.4}
+.daypick{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.daypick button{aspect-ratio:1;border-radius:50%;border:1px solid var(--line);background:var(--card2);font-weight:600;cursor:pointer;font-size:13px}
+.daypick button.act{background:var(--btn-bg);color:var(--btn-fg)}
+.empty{text-align:center;color:var(--mut);padding:24px 0}
+/* Sheet */
+.sheet-bg{position:fixed;inset:0;background:var(--overlay);display:none;z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--sheet);border-top:1px solid var(--line);border-radius:24px 24px 0 0;padding:10px 18px calc(20px + env(safe-area-inset-bottom));z-index:21;transform:translateY(105%);transition:transform .25s;max-height:92vh;overflow:auto;max-width:600px;margin:0 auto}
+.sheet{visibility:hidden}.sheet.open{transform:none;visibility:visible}.sheet-bg.open{display:block}
+.grab{width:40px;height:5px;background:var(--grab);border-radius:5px;margin:0 auto 12px}
+/* Nav */
+nav{position:fixed;bottom:0;left:0;right:0;justify-content:center;background:var(--nav-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:10}
+nav button{flex:1;max-width:calc(var(--app-w) / 4);background:none;border:0;color:var(--dim);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;cursor:pointer}
+nav button svg{width:24px;height:24px}
+nav button.act{color:var(--txt)}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--toast-bg);color:var(--toast-fg);border:1px solid var(--toast-line);padding:11px 18px;border-radius:14px;opacity:0;transition:.25s;z-index:30;font-size:14px;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px}
+.kv span{color:var(--mut)}
+pre{background:var(--pre-bg);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:11.5px;line-height:1.5;max-height:300px;overflow:auto;white-space:pre-wrap;margin:10px 0 0;color:var(--pre-fg)}
+.err{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.errd{font-size:12px;color:var(--mut);margin:-2px 0 8px;line-height:1.4}
+.err code{color:var(--heat)}
+.banner{background:var(--banner-bg);border:1px solid var(--banner-line);color:var(--banner-fg);border-radius:14px;padding:10px 14px;font-size:13px;margin-top:12px;display:none}
+.demo{background:var(--demo-bg);border-color:var(--demo-line);color:var(--demo-fg)}
+.prog{height:8px;background:var(--card2);border-radius:8px;overflow:hidden;margin-top:12px;border:1px solid var(--line)}
+.prog i{display:block;height:100%;width:0;background:var(--ok);transition:width .2s}
+.dcurve svg{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.dcurve .ax{font:10.5px system-ui;fill:var(--ch-ax);font-variant-numeric:tabular-nums}
+.dcurve .gl{stroke:var(--ch-grid);stroke-width:1}
+.dcurve .vl{font:600 10.5px system-ui;fill:var(--txt);font-variant-numeric:tabular-nums}
+.dcurve .pt{fill:var(--card);stroke:#e86a24;stroke-width:2.5;cursor:ns-resize}
+.dcurve .pt.sel{fill:#e86a24}
+.dcurve .now{stroke:#3093e6;stroke-width:1.5;stroke-dasharray:4 3}
+.dsel{display:flex;align-items:center;gap:8px;margin-top:6px}.dsel span{flex:1;font-size:13px;color:var(--mut)}
+.sbtn.small{width:38px;height:38px;font-size:20px}
+.wxr{display:block;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-top:6px;cursor:pointer}
+.wxr small{color:var(--mut)}
+.mdue{display:flex;align-items:center;gap:12px;background:var(--wbox-bg);border:1px solid var(--wbox-line);color:var(--wbox-fg);border-radius:14px;padding:12px 14px;margin-top:12px}
+.mdue div{flex:1;min-width:0}.mdue b{display:block}.mdue span{font-size:13px;opacity:.9}
+.mdue .btn{flex:none;background:#ffc857;color:#000}
+.stab{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.stab th{font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;text-align:right;padding:0 0 6px}
+.stab th:first-child,.stab td:first-child{text-align:left}
+.stab td{text-align:right;padding:8px 0;border-top:1px solid var(--line)}
+.stab td:first-child{color:var(--mut)}
+.stab tr.tot td{font-weight:600}
+.chart{position:relative;margin-top:6px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .ax{font:11px system-ui;fill:var(--ch-ax);font-variant-numeric:tabular-nums}
+.chart .gl{stroke:var(--ch-grid);stroke-width:1}
+.tip{position:absolute;top:0;pointer-events:none;background:var(--tip-bg);color:var(--txt);border:1px solid var(--tip-line);border-radius:10px;padding:7px 10px;font-size:12px;line-height:1.45;white-space:nowrap;opacity:0;transition:opacity .12s;z-index:2;font-variant-numeric:tabular-nums}
+.tip.on{opacity:1}.tip i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--mut);margin-top:2px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.legend i.band{height:10px;width:12px;border-radius:3px;opacity:.5}
+.legend i.dash{height:0;border-top:2px dashed;background:none!important}
+.rate{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}.rate b{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}.rate span{color:var(--mut);font-size:13px}
+.banner.warn{background:var(--wbox-bg);border-color:var(--wbox-line);color:var(--wbox-fg)}
+svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- Easter Eggs ---------- */
+.ring .hal{position:absolute;inset:8%;border-radius:50%;display:none;
+  background:radial-gradient(circle,#fff6c0 0 3%,#ffd23a 5%,#ff3a00 13%,#b00000 30%,#3a0000 52%,#0a0000 64%,#1c1c1c 66%,#5a5a5a 69%,#1a1a1a 72%,#000 100%);
+  box-shadow:0 0 30px rgba(255,0,0,.45),inset 0 0 18px #000;animation:halGlow 2.4s ease-in-out infinite}
+.ring.halOn>svg,.ring.halOn .center{opacity:0;transition:opacity .4s}
+.ring.halOn .hal{display:block}
+@keyframes halGlow{50%{filter:brightness(1.35) saturate(1.2);box-shadow:0 0 46px rgba(255,0,0,.65),inset 0 0 18px #000}}
+.halTxt::after{content:"▌";animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.stat.o9k{animation:shake .12s linear infinite;background:#3a0a0a}
+.stat.o9k b{color:#ff3b30}.stat.o9k span{color:#ff8a80;font-weight:700;white-space:nowrap;font-size:9px}
+@keyframes shake{0%{transform:translate(1px,0) rotate(.6deg)}50%{transform:translate(-1px,1px) rotate(-.6deg)}100%{transform:translate(1px,-1px)}}
+.flakes{position:fixed;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+.flakes i{position:absolute;top:-12px;border-radius:50%;background:#fff;opacity:.8;animation:fall linear infinite}
+:root[data-theme="light"] .flakes i{background:#9cc3e6}
+@keyframes fall{to{transform:translate(var(--dx),105vh)}}
+.xhat{position:absolute;left:-9px;top:-15px;width:26px;height:22px;transform:rotate(-18deg);pointer-events:none}
+@media (prefers-reduced-motion:reduce){.ring .hal{animation:none}.stat.o9k{animation:none}.flakes{display:none}}
+</style>
+<script>
+/* Darstellung: pro Gerät gespeichert (dark = Standard, light, auto = wie das Gerät) */
+function themeApply(){var c='dark';try{c=localStorage.getItem('sh_theme')||'dark'}catch(e){}
+  var t=c==='auto'?(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):c;
+  document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name=theme-color]');if(m)m.content=t==='light'?'#f3f7fc':'#000000';return c}
+themeApply();
+</script>
+</head>
+<body>
+<header>
+  <div class="brand"><h1>Heizmeister Hagena 9000</h1><svg class="xhat" id="xhat" hidden viewBox="0 0 40 34" aria-hidden="true"><path d="M3 27 C8 12 20 2 31 6 C36 8 37 14 35 17 C31 12 25 13 22 16 C19 20 18 24 17 27 Z" fill="#d32f2f"/><circle cx="35" cy="18" r="4.2" fill="#fff"/><rect x="1" y="25" width="20" height="7" rx="3.5" fill="#fff"/></svg></div>
+  <div class="hright"><div class="conn"><span class="dot" id="dot"></span><span id="clock">--:--</span></div><button class="ver" id="ver" hidden title="Firmware-Version"></button></div>
+</header>
+
+<main>
+<div class="banner" id="banner"></div>
+
+<!-- ============ FERNZUGRIFF EINRICHTEN (nur auf der Online-Version) ============ -->
+<section id="remoteSetup" style="display:none">
+  <div class="card">
+    <h2>Fernzugriff einrichten</h2>
+    <p class="hint" style="margin-top:0">Zugangsdaten deines MQTT-Brokers (z.B. HiveMQ Cloud). Sie werden nur auf diesem Gerät gespeichert.</p>
+    <label class="f">Broker-Adresse</label><input type="text" id="rHost" placeholder="xxxxxxxx.s1.eu.hivemq.cloud" autocomplete="off" autocapitalize="off">
+    <div class="row"><div><label class="f">WebSocket-Port</label><input type="number" id="rPort" value="8884"></div><div><label class="f">Basis-Topic</label><input type="text" id="rBase" value="HH9000" autocapitalize="off"></div></div>
+    <label class="f">Benutzer</label><input type="text" id="rUser" autocomplete="username" autocapitalize="off">
+    <label class="f">Passwort</label><input type="password" id="rPass" autocomplete="current-password">
+    <button class="btn" id="rSave" style="margin-top:16px">Verbinden</button>
+  </div>
+</section>
+
+
+<!-- ============ STEUERUNG ============ -->
+<section class="tab act" id="tab-ctl">
+  <div class="mdue" id="maintDue" hidden>
+    <div><b>Wartungslauf fällig</b><span id="maintDueTxt"></span></div>
+    <button class="btn small" id="maintRunNow">Jetzt starten</button>
+  </div>
+  <div class="card hero" id="hero">
+    <div class="heroTop">
+    <div class="stats side">
+      <div class="stat"><b id="volt">–</b><span>Spannung</span></div>
+      <div class="stat" title="Gebläsedrehzahl"><b id="fan">–</b><span id="fanLbl">Gebläse</span></div>
+      <div class="stat"><b id="pwr">–</b><span>Leistung</span></div>
+    </div>
+    <div class="ring" id="ringBox">
+      <svg viewBox="0 0 210 210"><circle cx="105" cy="105" r="92" fill="none" style="stroke:var(--ring-track)" stroke-width="12" stroke-linecap="round" stroke-dasharray="433.5 578"/>
+      <circle id="arc" cx="105" cy="105" r="92" fill="none" stroke="#333" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 578" style="transition:stroke-dasharray .6s,stroke .4s"/></svg>
+      <div class="center">
+        <div class="big" id="temp" title="Ist-Temperatur (Sensor im Heizgerät)" aria-label="Ist-Temperatur">--<small>°C</small></div>
+        <div class="tgt" id="tgtLine">Ziel <b id="tgtSmall">--</b> °C</div>
+        <div class="tgt" id="ventLine" hidden>Lüfter <b id="vSmall">--</b> %</div>
+        <div class="tgt" id="outside" style="margin-top:1px;font-size:13px"></div>
+        <div class="state" id="state" aria-live="polite">–</div>
+        <div class="rem" id="rem"></div>
+      </div>
+    </div>
+    <div class="stats side">
+      <div class="stat"><b id="flame">–</b><span>Flamme</span></div>
+      <div class="stat"><b id="fuel">–</b><span>l/h</span></div>
+      <div class="stat" title="Luftdruck (Sensor der Heizung)"><b id="press">–</b><span>hPa</span></div>
+    </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Betriebsart</h2>
+    <div class="modes">
+      <button class="mbtn heat" data-mode="heat"><svg class="i" viewBox="0 0 24 24"><path d="M12 2c1 3.5 5 5.8 5 11a5 5 0 0 1-10 0c0-2.3 1.2-4 2.4-5 0 2 .8 3.2 2 3.7C11.2 9 10.2 5.6 12 2z"/></svg>Heizen</button>
+      <button class="mbtn vent" data-mode="vent"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 10c-1-4 0-7 3-7 2.5 0 2.5 4-3 7zM14 12c4-1 7 0 7 3 0 2.5-4 2.5-7-3zM12 14c1 4 0 7-3 7-2.5 0-2.5-4 3-7zM10 12c-4 1-7 0-7-3 0-2.5 4-2.5 7 3z"/></svg>Lüften</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Laufzeit <span id="durInfo" style="text-transform:none;letter-spacing:0"></span></h2>
+    <div class="chips" id="durChips"></div>
+  </div>
+
+  <div class="card" id="tgtCard">
+    <h2>Zieltemperatur</h2>
+    <div class="stepper">
+      <button class="sbtn" id="tMinus">−</button>
+      <div class="sval"><span id="tgt">20</span><small>°C</small></div>
+      <button class="sbtn" id="tPlus">+</button>
+    </div>
+    <input type="range" id="tRange" min="5" max="35" step="1">
+  </div>
+  <div class="card" id="ventCard" hidden>
+    <h2>Lüftergeschwindigkeit</h2>
+    <div class="stepper">
+      <button class="sbtn" id="vMinus">−</button>
+      <div class="sval"><span id="vLvl">50</span><small>%</small></div>
+      <button class="sbtn" id="vPlus">+</button>
+    </div>
+    <input type="range" id="vRange" min="0" max="100" step="10" style="accent-color:var(--vent)">
+    <p class="hint" id="ventHint" hidden>Die Heizung hat Befehl 0x2A abgelehnt – die Lüfterstufe wird nicht übernommen (siehe Protokoll).</p>
+  </div>
+
+  <div class="card">
+    <h2>Vorwahl-Timer</h2>
+    <div id="timerActive" style="display:none"></div>
+    <div id="timerForm">
+      <div class="seg" id="tKind"><button data-k="dep" class="act">Warm um …</button><button data-k="in">Start in …</button><button data-k="at">Start um …</button></div>
+      <div id="tIn" style="display:none">
+        <div class="chips" style="margin-top:12px" id="inChips"></div>
+        <div class="row"><div><label class="f">Stunden</label><input type="number" id="inH" min="0" max="167" value="1"></div><div><label class="f">Minuten</label><input type="number" id="inM" min="0" max="59" step="5" value="0"></div></div>
+      </div>
+      <div id="tAt"><label class="f" id="tAtLbl">Abfahrtszeit (nächstes Vorkommen)</label><input type="time" id="atTime" value="07:30"></div>
+      <div id="tOpts" style="display:none">
+      <label class="f">Betriebsart</label>
+      <div class="seg" id="tMode"><button data-m="heat" class="act h">Heizen</button><button data-m="vent">Lüften</button></div>
+      <label class="f">Laufzeit</label>
+      <select id="tDur"></select>
+      </div>
+      <p class="hint" id="tPreview"></p>
+      <button class="btn" id="tSet" style="margin-top:12px">Timer setzen</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WOCHENPLAN ============ -->
+<section class="tab" id="tab-plan">
+  <div class="card">
+    <h2>Wochenplan <button class="btn small" id="addSched">+ Neu</button></h2>
+    <div id="schedList"></div>
+  </div>
+  <p class="hint" style="padding:0 6px">Der Wochenplan läuft direkt auf dem ESP32 – das Handy muss nicht verbunden sein. Voraussetzung ist eine gültige Uhrzeit (NTP über WLAN).</p>
+</section>
+
+<!-- ============ STATISTIK ============ -->
+<section class="tab" id="tab-stat">
+  <div class="card">
+    <h2>Betrieb &amp; Verbrauch</h2>
+    <div class="rate"><b id="stRate">–</b><span id="stRateTxt">aktueller Verbrauch</span></div>
+    <table class="stab" id="stTable"></table>
+    <p class="hint" id="stSince"></p>
+  </div>
+  <div class="card">
+    <h2>Heizstunden · letzte 30 Tage</h2>
+    <div class="chart" id="chDays"></div>
+  </div>
+  <div class="card">
+    <h2>Diesel · letzte 12 Monate</h2>
+    <div class="chart" id="chMonths"></div>
+  </div>
+  <div class="card">
+    <h2>Temperatur · letzte 24 h</h2>
+    <div class="legend"><span><i style="background:#e86a24"></i>Heizgerät (Innenraum)</span><span><i style="background:#3093e6"></i>Außen (Wetter)</span><span><i class="dash" style="border-color:var(--ch-volt)"></i>Ziel</span><span><i class="band" style="background:#e86a24"></i>Heizen</span></div>
+    <div class="chart" id="chTemp"></div>
+  </div>
+  <div class="card">
+    <h2>Temperatur · letzte 7 Tage</h2>
+    <div class="legend"><span><i style="background:#e86a24"></i>Heizgerät (Innenraum)</span><span><i style="background:#3093e6"></i>Außen (Wetter)</span><span><i class="dash" style="border-color:var(--ch-volt)"></i>Ziel</span><span><i class="band" style="background:#e86a24"></i>Heizen</span></div>
+    <div class="chart" id="chTemp7"></div>
+  </div>
+  <div class="card">
+    <h2>Bordspannung · letzte 24 h</h2>
+    <div class="legend"><span><i style="background:var(--ch-volt)"></i>Spannung</span><span><i class="dash" style="border-color:var(--warn)"></i>Warnung</span><span><i class="dash" style="border-color:var(--bad)"></i>Abschaltung</span><span><i class="band" style="background:#e86a24"></i>Heizen</span></div>
+    <div class="chart" id="chVolt"></div>
+  </div>
+  <div class="card">
+    <h2>Bordspannung · letzte 7 Tage</h2>
+    <div class="legend"><span><i style="background:var(--ch-volt)"></i>Spannung</span><span><i class="dash" style="border-color:var(--warn)"></i>Warnung</span><span><i class="dash" style="border-color:var(--bad)"></i>Abschaltung</span><span><i class="band" style="background:#e86a24"></i>Heizen</span></div>
+    <div class="chart" id="chVolt7"></div>
+  </div>
+  <div class="card">
+    <h2>Verbrauchsberechnung</h2>
+    <p class="hint" style="margin-top:0">Berechnet aus der Frequenz der Dosierpumpe, die die Heizung meldet, × ca. 32 µl pro Pumpenhub (abgeleitet aus dem Datenblatt: 2 kW ≈ 0,24 l/h bei 2,1 Hz). Die Vorförderung beim Start zählt mit. Zum Abgleichen: Nach dem Tanken den tatsächlichen Verbrauch mit der Statistik vergleichen und den Faktor anpassen (tatsächlich ÷ geschätzt × 100).</p>
+    <label class="f" for="fFac">Korrekturfaktor (%)</label><input type="number" id="fFac" min="50" max="200" step="1">
+    <button class="btn danger" id="stReset" style="margin-top:12px">Statistik zurücksetzen</button>
+  </div>
+</section>
+
+<!-- ============ EINSTELLUNGEN ============ -->
+<section class="tab" id="tab-set">
+  <div class="card">
+    <h2>Darstellung</h2>
+    <div class="seg" id="themeSeg"><button data-k="dark">Dunkel</button><button data-k="light">Hell</button><button data-k="auto">Automatisch</button></div>
+    <p class="hint">Gilt nur für dieses Gerät. „Automatisch“ folgt der Einstellung von Handy bzw. Computer.</p>
+  </div>
+  <div class="card">
+    <h2>Heizgerät</h2>
+    <div class="kv" id="devInfo"></div>
+  </div>
+  <div class="card">
+    <h2>Fehlerspeicher</h2>
+    <div id="errList"><p class="hint">Noch nicht gelesen.</p></div>
+    <div class="row"><button class="btn sec" id="errRead">Auslesen</button><button class="btn danger" id="errClear">Löschen</button></div>
+  </div>
+  <div class="card">
+    <h2>Warm um … (Vorheizen bis zur Abfahrt)</h2>
+    <p class="hint" style="margin-top:0">Für „Warm um“ berechnet der ESP den Start aus der Temperatur: je kälter, desto früher. Kurz vorher (ab „höchstens“ + 15 min vor der Abfahrt) ruft er die Außentemperatur alle 5 min frisch ab und rechnet den Start jedes Mal neu – der Start hängt also von der echten Temperatur kurz vor der Abfahrt ab, nicht von der beim Einstellen.</p>
+    <label class="f" for="wxQ">Standort für die Außentemperatur (Open-Meteo)</label>
+    <div class="row" style="margin:0"><input type="text" id="wxQ" placeholder="Ort, z.B. Babenhausen" autocomplete="off"><button class="btn small sec" id="wxSearch" style="flex:none">Suchen</button></div>
+    <div id="wxRes"></div>
+    <div class="kv" style="margin-top:10px"><span>Standort</span><b id="wxPlace">nicht gesetzt</b><span>Außen jetzt</span><b id="wxTemp">–</b></div>
+    <label class="f" for="dSrc">Temperatur für die Berechnung</label>
+    <select id="dSrc"><option value="0">Außentemperatur (Wetter), sonst Innenraum</option><option value="1">Innenraum (Sensor der Heizung), sonst Wetter</option></select>
+    <label class="f" style="margin-top:14px">Vorlaufzeit je Temperatur</label>
+    <div class="dcurve"><svg id="dCurve" viewBox="0 0 340 210" role="img" aria-label="Vorheizkurve: Vorlaufzeit in Minuten je Temperatur"></svg></div>
+    <div class="dsel"><span id="dSelTxt">Punkt antippen oder ziehen</span><button class="sbtn small" id="dSelM" aria-label="Weniger Minuten">−</button><button class="sbtn small" id="dSelP" aria-label="Mehr Minuten">+</button></div>
+    <div class="row"><div><label class="f" for="dMax">höchstens (min)</label><input type="number" id="dMax" min="5" max="180"></div><div><label class="f" for="dAfter">Nachlauf nach Abfahrt (min)</label><input type="number" id="dAfter" min="0" max="60"></div></div>
+    <button class="btn small sec" id="dReset" style="margin-top:10px">Standardkurve</button>
+  </div>
+  <div class="card">
+    <h2>Wartungslauf</h2>
+    <p class="hint" style="margin-top:0">Webasto empfiehlt, die Heizung <b>auch im Sommer etwa einmal im Monat 10–20 Minuten</b> laufen zu lassen. Sonst kann der Diesel in Pumpe und Leitungen verharzen, und die Heizung startet im Herbst nicht. Jeder normale Heizbetrieb mit mindestens 10 Minuten Flamme zählt.</p>
+    <div class="kv" style="margin-top:10px"><span>Letzter Heizbetrieb</span><b id="mLast">–</b></div>
+    <label class="f" for="mMode">Betriebsart</label>
+    <select id="mMode"><option value="0">Aus</option><option value="1">Nur erinnern</option><option value="2">Automatisch starten</option></select>
+    <div class="row"><div><label class="f" for="mDays">fällig nach (Tagen)</label><input type="number" id="mDays" min="7" max="120"></div><div><label class="f" for="mRun">Dauer (min)</label><input type="number" id="mRun" min="10" max="30"></div></div>
+    <div id="mAuto"><label class="f" for="mAt">Uhrzeit für den automatischen Lauf</label><input type="time" id="mAt">
+      <p class="hint" style="color:var(--banner-fg)">⚠ Automatisch nur einschalten, wenn das Fahrzeug immer im Freien steht. In einer geschlossenen Garage sammeln sich Abgase, das ist lebensgefährlich. Der Batterieschutz gilt auch hier.</p></div>
+    <button class="btn sec" id="mRunBtn" style="margin-top:12px">Jetzt starten</button>
+  </div>
+  <div class="card">
+    <h2>Batterieschutz</h2>
+    <div class="row" style="margin:0"><div><b>Batterieschutz aktiv</b><p class="hint" style="margin-top:2px">Warnt bei niedriger Spannung, schaltet die Heizung ab und verhindert neue Starts (auch Timer, Wochenplan, Home Assistant). Die Spannung misst die Heizung selbst, gemittelt über ca. 30 s.</p></div>
+    <label class="toggle"><input type="checkbox" id="bProt"><span></span></label></div>
+    <label class="f">Batterietyp</label>
+    <select id="bType"><option value="0">Blei (Nass)</option><option value="1">AGM</option><option value="2">Gel</option><option value="3">LiFePO4</option><option value="4">Eigene Werte</option></select>
+    <div class="row"><div><label class="f">Warnung unter (V)</label><input type="number" id="bWarn" step="0.1" min="9" max="14.5"></div><div><label class="f">Abschalten unter (V)</label><input type="number" id="bOff" step="0.1" min="9" max="14.5"></div></div>
+    <p class="hint" id="bInfo"></p>
+  </div>
+  <div class="card">
+    <h2>WLAN</h2>
+    <label class="f">WLAN 1 – Name (SSID)</label><input type="text" id="sSsid" autocomplete="off">
+    <label class="f">WLAN 1 – Passwort</label><input type="password" id="sPass" placeholder="unverändert">
+    <label class="f">WLAN 2 – Name (z.B. LTE-Router im Auto)</label><input type="text" id="sSsid2" autocomplete="off" placeholder="optional">
+    <label class="f">WLAN 2 – Passwort</label><input type="password" id="sPass2" placeholder="unverändert">
+    <p class="hint">Der ESP verbindet sich automatisch mit dem stärksten der beiden Netze.</p>
+    <label class="f">Hostname</label><input type="text" id="sHost">
+  </div>
+  <div class="card">
+    <h2>Fernzugriff &amp; Home Assistant (MQTT)</h2>
+    <div class="row" style="margin:0"><div>MQTT aktivieren</div><label class="toggle"><input type="checkbox" id="mEn"><span></span></label></div>
+    <div class="row" style="margin:6px 0 0"><div>Verschlüsselt (TLS)<p class="hint" style="margin-top:2px">Für Cloud-Broker immer an (Port 8883).</p></div><label class="toggle"><input type="checkbox" id="mTls"><span></span></label></div>
+    <label class="f">Broker</label><input type="text" id="mHost" placeholder="xxxxxxxx.s1.eu.hivemq.cloud" autocapitalize="off">
+    <div class="row"><div><label class="f">Port</label><input type="number" id="mPort"></div><div><label class="f">Basis-Topic</label><input type="text" id="mBase"></div></div>
+    <div class="row"><div><label class="f">Benutzer</label><input type="text" id="mUser" autocomplete="off"></div><div><label class="f">Passwort</label><input type="password" id="mPass" placeholder="unverändert"></div></div>
+    <p class="hint">Über den Broker ist die Weboberfläche auch unterwegs nutzbar. Home Assistant findet das Gerät automatisch (MQTT-Discovery).</p>
+  </div>
+  <div class="card" id="remoteCard" style="display:none">
+    <h2>Fernzugriff (dieses Handy)</h2>
+    <div class="kv" id="remoteInfo"></div>
+    <button class="btn sec" id="rLogout" style="margin-top:12px">Zugangsdaten auf diesem Gerät löschen</button>
+  </div>
+  <div class="card">
+    <h2>Zugangsschutz</h2>
+    <div class="row"><div><label class="f">Benutzer</label><input type="text" id="wUser"></div><div><label class="f">Passwort</label><input type="password" id="wPass" placeholder="leer = kein Schutz"></div></div>
+    <button class="btn sec small" id="wClear">Passwortschutz entfernen</button>
+  </div>
+  <button class="btn" id="saveSet">Einstellungen speichern</button>
+  <div class="card" id="fwCard">
+    <h2>Firmware-Update</h2>
+    <div class="kv"><span>Installiert</span><b id="fwVer">–</b><span>Letzter Neustart</span><b id="sysReset">–</b><span>Vorherige Version</span><b id="sysPrev">–</b></div>
+    <p class="hint" id="sysHint"></p>
+    <button class="btn sec" id="sysBack" hidden style="margin-bottom:10px">Zur vorherigen Version zurück</button>
+    <div id="fwLocal">
+      <label class="f" for="fwFile">Neue Firmware (.bin)</label>
+      <input type="file" id="fwFile" accept=".bin,application/octet-stream" style="width:100%;color:var(--mut)">
+      <p class="hint">In der Arduino IDE: <b>Sketch → Kompilierte Binärdatei exportieren</b>. Danach im Sketch-Ordner unter <code>build/…/</code> die Datei <b>HH9000.ino.bin</b> wählen, nicht „merged“, „bootloader“ oder „partitions“. Heizung vorher ausschalten.</p>
+      <div class="prog" id="fwProg" hidden><i id="fwBar"></i></div>
+      <p class="hint" id="fwMsg" aria-live="polite"></p>
+      <button class="btn" id="fwGo" style="margin-top:6px">Firmware hochladen</button>
+    </div>
+    <p class="hint" id="fwRemote" hidden>Firmware-Updates gehen nur im selben WLAN wie der ESP (direkt über seine IP-Adresse), nicht über den Fernzugriff.</p>
+  </div>
+  <div class="card">
+    <h2>Protokoll <button class="btn small sec" id="logRefresh">Aktualisieren</button></h2>
+    <pre id="log">–</pre>
+    <div class="row"><button class="btn small sec" id="logCls" title="Anzeige leeren – das Protokoll im ESP bleibt erhalten">Leeren</button><button class="btn small sec" id="logCopy">Kopieren</button><button class="btn small sec" id="logSave">Herunterladen</button></div>
+  </div>
+  <button class="btn sec" id="advBtn" aria-expanded="false" aria-controls="adv" style="margin:0 0 12px">Erweiterte Optionen ▾</button>
+  <div id="adv" hidden>
+  <div class="card">
+    <h2>W-Bus Diagnose</h2>
+    <p class="hint" style="margin-top:0">Kommando + Daten in Hex, Header/Länge/Prüfsumme werden ergänzt. Bsp.: <code>50 05</code> (Sensoren), <code>51 0A</code> (Gerätename)</p>
+    <div class="row"><input type="text" id="raw" value="50 05" autocomplete="off"><button class="btn small" id="rawSend" style="flex:none">Senden</button></div>
+    <pre id="rawOut" style="display:none"></pre>
+  </div>
+  <div class="card">
+    <h2>Messwerte scannen</h2>
+    <p class="hint" style="margin-top:0">Fragt alle Messwert-Nummern der Heizung ab (<code>50 xx</code> und <code>50 30 xx</code>, dauert ca. 30 s). Zweimal scannen – z.B. kurz nach dem Start und nach ein paar Minuten Heizen – dann werden geänderte Werte markiert (▲ gestiegen, ▼ gefallen).</p>
+    <button class="btn" id="scBtn">Scan starten</button>
+    <p class="hint" id="scInfo"></p>
+    <pre id="scOut" hidden style="white-space:pre;overflow-x:auto;max-height:420px"></pre>
+    <div class="row"><button class="btn small sec" id="scCopy">Ergebnis kopieren</button><button class="btn small sec" id="scClear">Zurücksetzen</button></div>
+  </div>
+  <div class="card">
+    <h2>W-Bus mithören</h2>
+    <p class="hint" style="margin-top:0">Zum Belauschen des Original-Bedienteils: Bedienteil normal an die Heizung anschließen, den ESP mit dem LIN-Modul parallel an dieselbe W-Bus-Leitung (dazu Masse und 12 V). Im Mithörmodus sendet der ESP nichts und steuert die Heizung nicht. Endet automatisch nach 2 h oder beim Neustart.</p>
+    <button class="btn" id="snBtn">Mithören starten</button>
+    <div class="row" style="margin-top:10px"><input type="text" id="snMarkTxt" placeholder="Markierung, z.B. Rad auf Stufe 3" maxlength="45" autocomplete="off"><button class="btn small sec" id="snMark" style="flex:none">Markieren</button></div>
+    <div class="row" style="margin:10px 0 0;align-items:center"><div><b>Nur neue Telegramme</b><p class="hint" style="margin-top:2px">Wiederholungen ausblenden – so fällt ein neuer Befehl sofort auf.</p></div>
+    <label class="toggle"><input type="checkbox" id="snNew" checked><span></span></label></div>
+    <p class="hint" id="snInfo"></p>
+    <pre id="snOut" hidden style="white-space:pre;overflow-x:auto;max-height:420px"></pre>
+    <div class="row"><button class="btn small sec" id="snCopy">Alles kopieren</button><button class="btn small sec" id="snSave">Herunterladen</button></div>
+  </div>
+  </div>
+  <button class="btn danger" id="restart" style="margin:6px 0 20px">HH9000 neu starten</button>
+</section>
+</main>
+
+<!-- Zeitplan-Editor -->
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h2 style="margin:0 0 6px;font-size:18px" id="shTitle">Neuer Eintrag</h2>
+  <div class="seg" id="shKind"><button data-k="depart" class="act">Warm um (Abfahrt)</button><button data-k="start">Start um</button></div>
+  <label class="f" id="shTimeLbl">Abfahrtszeit</label><input type="time" id="shTime" value="06:30">
+  <label class="f">Wochentage</label>
+  <div class="daypick" id="shDays"></div>
+  <div class="row" style="margin-top:8px"><button class="btn small sec" data-preset="31">Mo–Fr</button><button class="btn small sec" data-preset="96">Sa–So</button><button class="btn small sec" data-preset="127">Täglich</button></div>
+  <div id="shStartOpts">
+  <label class="f">Betriebsart</label>
+  <div class="seg" id="shMode"><button data-m="heat" class="act h">Heizen</button><button data-m="vent">Lüften</button></div>
+  <label class="f">Laufzeit</label><select id="shDur"></select>
+  </div>
+  <p class="hint" id="shDepHint">Der Start wird aus der Temperatur berechnet, damit es zur Abfahrt warm ist (Einstellungen → „Warm um“).</p>
+  <label class="f">Zieltemperatur</label>
+  <div class="stepper"><button class="sbtn" id="shTm">−</button><div class="sval"><span id="shTgt">20</span><small>°C</small></div><button class="sbtn" id="shTp">+</button></div>
+  <div class="row" style="margin-top:18px"><button class="btn danger" id="shDel">Löschen</button><button class="btn" id="shSave">Speichern</button></div>
+</div>
+
+<nav>
+  <button class="act" data-tab="ctl"><svg class="i" viewBox="0 0 24 24"><path d="M12 2c1 3.5 5 5.8 5 11a5 5 0 0 1-10 0c0-2.3 1.2-4 2.4-5 0 2 .8 3.2 2 3.7C11.2 9 10.2 5.6 12 2z"/></svg>Steuerung</button>
+  <button data-tab="plan"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Wochenplan</button>
+  <button data-tab="stat"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Statistik</button>
+  <button data-tab="set"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Einstellungen</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+const DUR=[[30,'30 min'],[60,'1 h'],[120,'2 h'],[240,'4 h'],[480,'8 h'],[960,'16 h'],[1440,'24 h'],[0,'Dauerhaft']];
+const DAYS=['Mo','Di','Mi','Do','Fr','Sa','So'];
+const FLAME='<svg class="i" viewBox="0 0 24 24"><path d="M12 2c1 3.5 5 5.8 5 11a5 5 0 0 1-10 0c0-2.3 1.2-4 2.4-5 0 2 .8 3.2 2 3.7C11.2 9 10.2 5.6 12 2z"/></svg>';
+const FAN='<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 10c-1-4 0-7 3-7 2.5 0 2.5 4-3 7zM14 12c4-1 7 0 7 3 0 2.5-4 2.5-7-3zM12 14c1 4 0 7-3 7-2.5 0-2.5-4 3-7zM10 12c-4 1-7 0-7-3 0-2.5 4-2.5 7 3z"/></svg>';
+const $=id=>document.getElementById(id);
+let eggHal=0,egg9k=0;  // Easter Eggs (siehe Ende der Datei)
+const EGG=new URLSearchParams(location.search).get('egg')||'';  // zum Testen: ?egg=xmas|newyear
+let S=null,selDur=60,tgt=22,tgtLock=0,vlv=50,vlvLock=0,demo=false,sched=[],editIdx=-1,ed=null;
+const durLabel=m=>(DUR.find(d=>d[0]==m)||[0,m+' min'])[1];
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2200)}
+function fmtSec(s){if(s<0)return'';const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h} h ${String(m).padStart(2,'0')} min`:m?`${m} min`:`${s%60} s`}
+function pad(n){return String(n).padStart(2,'0')}
+function fmtT(t){return t==null?'–':(Math.round(t*10)/10).toString().replace('.',',')+' °C'}
+function fmtV(v){return v==null?'–':Number(v).toFixed(2).replace('.',',')+' V'}
+
+/* ---------- Fernzugriff über MQTT (WebSocket, TLS) ----------
+   Läuft diese Seite NICHT auf dem ESP (z.B. https://… auf GitHub Pages),
+   werden alle Befehle über den MQTT-Broker an den ESP geschickt. */
+const REMOTE=location.protocol=='https:'||/[?&]remote/.test(location.search);
+let RC=null,mq=null,cid='web_'+Math.random().toString(16).slice(2,10),rpcWait={},espOnline=null,lastStateAt=0,brokerState='connecting';
+try{RC=JSON.parse(localStorage.getItem('sh_remote')||'null')}catch(e){}
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('MQTT-Bibliothek konnte nicht geladen werden'));document.head.appendChild(s)})}
+async function remoteInit(){
+  if(!RC){$('remoteSetup').style.display='block';document.querySelectorAll('.tab').forEach(t=>t.style.display='none');document.querySelector('nav').style.display='none';return}
+  $('remoteCard').style.display='block';
+  $('remoteInfo').innerHTML=`<span>Broker</span><b>${RC.host}:${RC.port}</b><span>Benutzer</span><b>${RC.user}</b><span>Topic</span><b>${RC.base}</b>`;
+  try{await loadScript('https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js')}catch(e){brokerState='error';render();return toast(e.message)}
+  const T=x=>RC.base+'/'+x;
+  mq=mqtt.connect(`wss://${RC.host}:${RC.port}/mqtt`,{username:RC.user,password:RC.pass,clientId:cid,clean:true,reconnectPeriod:4000,connectTimeout:15000,keepalive:30});
+  mq.on('connect',()=>{brokerState='ok';mq.subscribe([T('state'),T('avail'),T('rpc/res/'+cid)]);render();loadSched();loadSettings()});
+  mq.on('reconnect',()=>{brokerState='connecting';render()});
+  mq.on('offline',()=>{brokerState='error';render()});
+  mq.on('error',e=>{brokerState='error';render();if(/auth|Not authorized|Bad user/i.test(e.message))toast('Broker: Benutzer/Passwort falsch')});
+  mq.on('message',(t,m)=>{const s=m.toString();
+    if(t==T('state')){try{S=JSON.parse(s);lastStateAt=Date.now();render()}catch(e){}}
+    else if(t==T('avail')){espOnline=s=='online';render()}
+    else{try{const r=JSON.parse(s),w=rpcWait[r.id];if(!w)return;delete rpcWait[r.id];clearTimeout(w.t);
+      r.code>=400?w.rej(new Error((r.data&&r.data.error)||('Fehler '+r.code))):w.res(r.data)}catch(e){}}});
+}
+function rpc(path,body){return new Promise((res,rej)=>{
+  if(!mq||!mq.connected)return rej(new Error('Keine Verbindung zum Broker'));
+  const id=Math.random().toString(36).slice(2,10);
+  const t=setTimeout(()=>{delete rpcWait[id];rej(new Error('ESP antwortet nicht'))},15000);
+  rpcWait[id]={res,rej,t};
+  mq.publish(RC.base+'/rpc/req',JSON.stringify({id,m:body===undefined?'GET':'POST',p:path,b:body===undefined?null:body,r:cid}),{qos:1});
+})}
+$('rSave').onclick=()=>{const c={host:$('rHost').value.trim().replace(/^wss?:\/\//,'').replace(/\/.*$/,''),port:+$('rPort').value||8884,user:$('rUser').value.trim(),pass:$('rPass').value,base:$('rBase').value.trim()||'HH9000'};
+  if(!c.host||!c.user||!c.pass)return toast('Bitte Broker, Benutzer und Passwort angeben');
+  try{localStorage.setItem('sh_remote',JSON.stringify(c))}catch(e){return toast('Speichern im Browser nicht möglich')}location.reload()};
+$('rLogout').onclick=()=>{if(!confirm('Zugangsdaten auf diesem Gerät löschen?'))return;try{localStorage.removeItem('sh_remote')}catch(e){}location.reload()};
+
+/* ---------- API (lokal per HTTP, unterwegs per MQTT, Demo ohne ESP) ---------- */
+async function api(path,body){
+  if(demo)return mock(path,body);
+  if(REMOTE){const r=await rpc(path,body);if(path=='/api/status'){S=r;lastStateAt=Date.now()}return r}
+  // X-HH9000: Herkunftskennung – der ESP nimmt Befehle nur damit an (Schutz gegen fremde Webseiten)
+  const o=body!==undefined?{method:'POST',headers:{'Content-Type':'application/json','X-HH9000':'1'},body:JSON.stringify(body)}:{headers:{'X-HH9000':'1'}};
+  const r=await fetch(path,o);
+  if(r.status==429)throw new Error(await r.text());
+  const j=await r.json();
+  if(!r.ok&&j&&j.error)throw new Error(j.error);return j;
+}
+const M={mode:'off',phase:'off',remaining:0,duration:60,target:22,online:true,state:4,stateText:'Aus',temp:7,voltage:12.6,flame:false,power:0,fan:0,timer:{active:false},timeValid:true,bus:{ok:0,err:0},opHours:412.5,workHours:430.1,starts:918,wifi:{rssi:-61,ip:'192.168.4.1'},mqtt:false,end:0,fuelRate:0,fw:'1.8.2 (Demo)',fanMin:3560,fanMax:4750,pressure:1013,ventLevel:50,cmd:0,outside:-3.4,outsideAge:12,place:'Babenhausen, Hessen, Deutschland',preheat:{minutes:25,temp:-3.4,source:'Außen (Wetter)'},maint:{mode:1,due:true,interval:30,runMin:15,at:'12:00',daysSince:34,last:'18.10.2026'},batt:{enabled:true,state:'ok',avg:12.62,warn:12.2,off:11.8,type:'AGM',startBlocked:false}};
+let MS=[{enabled:true,days:31,hour:7,minute:30,mode:'heat',kind:'depart',duration:60,target:21},{enabled:false,days:96,hour:9,minute:0,mode:'vent',duration:30,target:20}];
+function mock(p,b){
+  const now=Date.now();
+  if(p=='/api/status'){const d=new Date();M.time=pad(d.getHours())+':'+pad(d.getMinutes());
+    if(M.mode!='off'){M.remaining=M.end?Math.max(0,Math.round((M.end-now)/1000)):-1;
+      if(M.mode=='heat'){const run=(now-(M.startAt||now))/1000;if(run<8){M.fan=77;M.fanRpm=3723;M.power=0;M.flame=false;M.state=0x2E;M.stateText='Glühen'}else{M.temp=Math.min(M.target+1,M.temp+.05);M.fan=99;M.fanRpm=4745;M.power=1650;M.flame=true;M.state=0x41;M.stateText='Standheizbetrieb'}}
+      else{M.fanRpm=Math.round(3560+(M.ventLevel-10)*13.2);M.fan=Math.round(M.fanRpm/48);M.cmd=0x2A;M.power=0;M.flame=false;M.state=0x1C;M.stateText='Lüften'}}
+    else{M.fan=0;M.fanRpm=0;M.power=0;M.flame=false;M.state=4;M.stateText='Aus'}
+    M.fuelRate=M.power>50?+(M.power/8333).toFixed(3):0;
+    if(M.timer.active){M.timer.in=Math.round((M.timer.atMs-now)/1000)}
+    return JSON.parse(JSON.stringify(M))}
+  if(p=='/api/control'){if(b.action=='off'){M.mode='off';M.phase='off';M.duration=60}else{M.mode=M.phase=b.action;M.startAt=now;M.duration=b.duration;M.end=b.duration?now+b.duration*60000:0;if(b.target)M.target=b.target}return{ok:true}}
+  if(p=='/api/duration'){M.duration=b.duration;if(M.mode!='off')M.end=b.duration?now+b.duration*60000:0;return{ok:true}}
+  if(p=='/api/target'){M.target=b.target;return{ok:true}}
+  if(p=='/api/ventlevel'){if(b.level<=0){if(M.mode=='vent'){M.mode=M.phase='off'}}else M.ventLevel=b.level;return{ok:true}}
+  if(p=='/api/timer'){if(b.cancel)M.timer={active:false};else{const at=new Date(now+b.inMinutes*60000);M.timer={active:true,atMs:+at,mode:b.mode,depart:!!b.depart,duration:b.duration||60,target:b.target,at:pad(at.getHours())+':'+pad(at.getMinutes())}}return{ok:true}}
+  if(p=='/api/stats'){const days=[],months=[];for(let i=29;i>=0;i--){const d=new Date(now-i*864e5);const h=(d.getDay()>0&&d.getDay()<6)?(0.4+((i*7)%5)/10):((i%3)?0:1.2);days.push({d:d.toISOString().slice(0,10),h:+h.toFixed(2),l:+(h*0.17).toFixed(2),s:h?1+(i%2):0})}
+    for(let k=11;k>=0;k--){const d=new Date();d.setMonth(d.getMonth()-k);const m=d.getMonth();const win=[0,1,2,10,11].includes(m)?1:[3,9].includes(m)?0.4:0.05;months.push({m:d.getFullYear()+'-'+String(m+1).padStart(2,'0'),h:+(22*win).toFixed(1),l:+(22*win*0.17).toFixed(1)})}
+    return{rateLph:M.mode=='heat'?0.192:0,factor:100,stored:true,since:'01.10.2026',today:{heatH:0.75,ventH:0,starts:1,fuelL:0.13},week:{heatH:3.4,ventH:0.5,starts:5,fuelL:0.58},month:{heatH:11.2,ventH:1.5,starts:16,fuelL:1.9},year:{heatH:38.5,ventH:6,starts:61,fuelL:6.5},total:{heatH:38.5,ventH:6,starts:61,fuelL:6.5},days,months}}
+  if(p=='/api/history'){const wk=b&&b.range=='7d',st=(b&&b.step)||2,iv=st*(wk?600:60),span=wk?7*86400:86400,t=[],tin=[],tout=[],v=[],f=[],z=[];const n0=Math.floor(now/1000/iv)*iv;
+    for(let tt=n0-span+iv;tt<=n0;tt+=iv){const dn=Math.floor((n0-tt)/86400);z.push(dn>=3&&dn<=4?19:21);const hr=new Date(tt*1000).getHours()+new Date(tt*1000).getMinutes()/60;const heat=(hr>=6.6&&hr<7.5)||(hr>=17&&hr<17.6);
+      const out=-2-3*Math.cos((hr-15)/24*2*Math.PI)+(wk?Math.sin(tt/86400/7*2*Math.PI*3)*3:0);const ph=heat?(hr>=17?hr-17:hr-6.6):0;t.push(tt);tout.push(+out.toFixed(1));tin.push(+(heat?Math.min(21,out+3+ph*45):out+3).toFixed(1));v.push(+(heat?12.9:13.25-((tt%86400)/86400)*0.25).toFixed(2));f.push(heat?5:0)}
+    return{range:wk?'7d':'24h',step:st,interval:iv,span,t,tin,tout,v,f,z}}
+  if(p=='/api/maint/run'){M.maint.due=false;M.mode=M.phase='heat';M.duration=15;M.end=now+15*60000;return{ok:true}}
+  if(p=='/api/geocode')return{ok:true,results:[{name:b.q,region:'Hessen, Deutschland',lat:49.96,lon:8.95}]};
+  if(p=='/api/schedule'){if(b)MS=b.entries;return{entries:MS,max:12}}
+  if(p=='/api/settings')return b?{ok:true}:{ssid:'',host:'HH9000',mqttEnabled:false,mqttTls:true,mqttPort:8883,mqttBase:'HH9000',webUser:'admin',battProt:true,battType:1,battWarn:12.2,battOff:11.8,wxPlace:'Babenhausen, Hessen, Deutschland',wxLat:49.96,wxLon:8.95,depSource:0,depCurve:[40,35,30,25,20,15,10,5,2,0],depMax:60,depAfter:10,fuelFactor:100,paramCmd:true,maintMode:1,maintDays:30,maintRunMin:15,maintAt:'12:00'};
+  if(p=='/api/scan'){const res=[];for(let id=b.from;id<=b.to;id++){let v=null;
+      if(b.sub==0x30&&id==0x3A)v='30 3A 03 F5';else if(b.sub==0x30&&id==0x11)v='30 11 0'+Math.floor(Math.random()*9)+' 2C';else if(!b.sub&&id==5)v='05 39 31 1A 01 06 40 00 C8';
+      res.push([id,v])}return{ok:true,res}}
+  if(p=='/api/sniff'){
+    if(b.on===true){M.sniff={frames:0,bad:0,secs:0};M.snR=[];M.snT0=now}else if(b.on===false){M.sniff=undefined}
+    const t=()=>now-(M.snT0||now);
+    if(b.mark)M.snR.push([t(),2,b.mark]);
+    if(M.sniff){M.sniff.secs=Math.round(t()/1000);const lvl=M.snLvl||'1E';
+      for(const f of ['F4 03 50 07 A0','4F 04 D0 07 04 9C','F4 03 50 05 A2','4F 0A D0 05 39 31 1A 00 00 00 00 00 '+'XX']){
+        if(f.includes('XX'))M.snR.push([t()+40,4,'4F 0A D0 05 39 31']);else M.snR.push([t(),1,f]);M.sniff.frames++}
+      if(Math.random()<.3)M.snR.push([t(),1,'34 05 22 1E 07 0E'])}
+    const from=b.from||0;return{on:!!M.sniff,oldest:0,frames:M.sniff?M.sniff.frames:0,bad:0,recs:(M.snR||[]).slice(from,from+120),next:Math.min((M.snR||[]).length,from+120)}}
+  if(p=='/api/system')return b&&b.rollback?{ok:true}:{fw:'2.2.0 (Demo)',reset:'Einschalten',confirmed:true,rollback:true,prev:'2.1.0 (Nov 24 2026 10:12:44)'};
+  if(p=='/api/log'){M.logN=(M.logN||3)+1;const l=[];for(let i=M.logN;i>0;i--)l.push('23.11. 18:'+pad(i%60)+':00  Demo-Eintrag '+i);return{log:l.slice(0,150),seq:M.logN}}
+  if(p=='/api/errors')return{ok:true,errors:[{code:'0x02',text:'Kein Start',count:1,detail:{flags:0,count:1,state:0x2e,stateText:'Glühen',temp:-6,voltage:11.94,hours:697,minutes:12}},{code:'0x88',text:'Dosierpumpe Unterbrechung',count:2,raw:'02 88 01'}]};
+  return{ok:true,tx:'F4 03 50 05 A2',rx:'4F 0B D0 05 39 31 1C 00 00 00 05 DC 02'};
+}
+
+/* ---------- Rendering ---------- */
+function banner(t,cls){const b=$('banner');b.className='banner'+(cls?' '+cls:'');b.style.display='block';b.textContent=t}
+function hm(ts){const d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes())}
+function render(){
+  const b=$('banner');
+  if(REMOTE){
+    if(!RC)return;
+    if(brokerState!='ok'){banner(brokerState=='error'?'Keine Verbindung zum Broker – Internet/Zugangsdaten prüfen.':'Verbinde mit dem Broker …','demo');$('dot').className='dot off';if(!S)return}
+    else if(espOnline===false){banner('ESP32 ist offline (Auto ohne Strom oder Internet?)'+(lastStateAt?' – letzter Stand '+hm(lastStateAt)+' Uhr.':''));$('dot').className='dot off';if(!S)return}
+    else if(!S){banner('Warte auf Daten vom ESP32 …','demo');return}
+  }
+  if(!S)return;
+  const stale=REMOTE&&lastStateAt&&Date.now()-lastStateAt>60000;
+  $('dot').className='dot '+(S.online&&(!REMOTE||(brokerState=='ok'&&espOnline!==false&&!stale))?'on':'off');
+  $('clock').textContent=S.timeValid?S.time:'--:--';
+  const age=REMOTE&&lastStateAt?Math.round((Date.now()-lastStateAt)/1000):0;
+  if(REMOTE&&(brokerState!='ok'||espOnline===false)){}
+  else if(stale){banner('Keine aktuellen Daten seit '+hm(lastStateAt)+' Uhr.')}
+  else if(demo){b.className='banner demo';b.style.display='block';b.textContent='Demo-Modus – keine Verbindung zum ESP32.'}
+  else if(S.sniff){banner('Mithörmodus aktiv: Der ESP hört nur zu und steuert die Heizung nicht ('+S.sniff.frames+' Telegramme). Beenden unter Einstellungen › Erweiterte Optionen › W-Bus mithören.','warn')}
+  else if(!S.online){b.className='banner';b.style.display='block';b.textContent='Heizung antwortet nicht über den W-Bus. Verkabelung/Zündung prüfen.'}
+  else if(S.batt&&S.batt.enabled&&S.batt.state==='cutoff'){banner('Batterieschutz: Heizung abgeschaltet und gesperrt ('+fmtV(S.batt.avg)+'). Start wieder ab '+fmtV(S.batt.off+0.5)+', z.B. nach dem Laden.')}
+  else if(S.batt&&S.batt.enabled&&S.batt.state==='warn'){banner('Batterie schwach: '+fmtV(S.batt.avg)+' ('+S.batt.type+'). Häufige Entladung so tief schadet der Batterie. Abschaltung bei '+fmtV(S.batt.off)+'.','warn')}
+  else if(S.mode!='off'&&S.cmdOk===false){b.className='banner';b.style.display='block';b.textContent='Einschaltbefehl wird von der Heizung nicht bestätigt ('+((S.bus&&S.bus.lastErr)||'')+').'}
+  else b.style.display='none';
+
+  if(S.sniff&&$('adv').hidden)advShow(true);  // laufendes Mithören sichtbar machen
+  $('temp').innerHTML=(S.temp!=null?Math.round(S.temp):'--')+'<small>°C</small>';
+  if(Date.now()>tgtLock){tgt=S.target;showTgt()}
+  if(S.ventLevel!=null&&Date.now()>vlvLock){vlv=S.ventLevel;showVlv()}
+  {const v=S.mode=='vent';$('tgtCard').hidden=v;$('ventCard').hidden=!v;$('tgtLine').hidden=v;$('ventLine').hidden=!v;$('ventHint').hidden=!(v&&S.cmd&&S.cmd!=0x2A)}
+  const mode=S.mode, ph=S.phase;
+  const hero=$('hero');hero.className='card hero'+(mode!='off'?' running '+ph:'');
+  // Bogen: Ist-Temperatur 0..40°C
+  // Bogen als Tacho: Heizen = Heizleistung (0-2000 W), Lüften = Gebläse (0-100 %),
+  // Aus = leer bzw. grau mit Gebläse im Nachlauf. Startphase ohne Leistung: pulsierend.
+  {const MAX_W=2000;const arc=$('arc');let f=0,col='var(--ring-off)',pulse=false,tip='';
+   const fan=Math.max(0,Math.min(100,S.fan||0));
+   if(mode=='heat'&&ph=='heat'){col='var(--heat)';
+     if((S.power||0)>50){f=S.power/MAX_W;tip='Heizleistung '+S.power+' W von '+MAX_W+' W'}else{f=1;pulse=true;tip='Startphase: '+(S.stateText||'')}}
+   else if(mode!='off'){col='var(--vent)';
+     // Ring = eingestellte Lüfterstufe (reagiert sofort auf den Schiebebalken), Ist-Drehzahl in der Kachel
+     const lv=(Date.now()<vlvLock?vlv:S.ventLevel);
+     if(lv!=null){f=lv/100;tip='Lüfterstufe '+lv+' %'+(S.fanRpm!=null?' · Ist '+S.fanRpm+' U/min':'')}
+     else{f=fan/100;tip='Gebläse '+Math.round(fan)+' %'}}
+   else if(fan>0){f=fan/100;tip='Nachlauf: Gebläse '+Math.round(fan)+' %'}
+   f=Math.max(0,Math.min(1,f));arc.setAttribute('stroke-dasharray',(433.5*f)+' 578');arc.style.stroke=col;
+   arc.style.visibility=f>0.003?'visible':'hidden';  // kein Punkt bei leerem Bogen
+   arc.classList.toggle('pulse',pulse);$('ringBox').title=tip}
+  const st=$('state');
+  if(mode=='heat'&&ph=='heat')st.innerHTML=`<span class="heat-c flick" style="display:flex">${FLAME}</span><span>${S.stateText}</span>`;
+  else if(mode!='off')st.innerHTML=`<span class="vent-c spin" style="display:flex">${FAN}</span><span>${S.stateText}</span>`;
+  else st.innerHTML=`<span>${S.stateText||'Aus'}</span>`;
+  const remain=S.remaining>0?Math.max(0,S.remaining-age):S.remaining;
+  $('fwVer').textContent=S.fw||'–';
+  if(S.fw){const v=$('ver');const ver=S.fwVersion||S.fw.replace(/\s*\([^)]*\)\s*$/,'');v.textContent='v'+ver;v.title='Firmware '+ver+(S.fwBuild?' · erstellt '+S.fwBuild:'');v.hidden=false}
+  {const mt=S.maint||{};$('maintDue').hidden=!(mt.due&&mode=='off');
+   $('maintDueTxt').textContent=(mt.daysSince!=null?'Die Heizung ist seit '+mt.daysSince+' Tagen nicht gelaufen. ':'')+(mt.mode==2?'Automatischer Start täglich um '+mt.at+'.':mt.runMin+' min Heizen hält Pumpe und Leitungen frei.');
+   $('mLast').textContent=mt.last?mt.last+' (vor '+mt.daysSince+' Tagen)':'noch nicht erfasst'}
+  $('wxTemp').textContent=S.outside!=null?fmtT(S.outside)+(S.outsideAge>=0?' (vor '+S.outsideAge+' min)':''):'–';
+  $('outside').textContent=S.outside!=null?'Außen '+nf(S.outside,1)+'°':'';$('outside').title=S.place?'Außentemperatur '+S.place:'';
+  $('rem').textContent=mode=='off'?'':remain<0?'Dauerbetrieb':'noch '+fmtSec(remain);
+  $('press').textContent=S.pressure||'–';
+  if(Date.now()<egg9k){}else if(S.fanRpm!=null){$('fan').textContent=S.fanRpm||0;$('fanLbl').textContent='U/min'}else{$('fan').textContent=Math.round(S.fan||0)+' %';$('fanLbl').textContent='Gebläse'}
+  $('volt').textContent=S.voltage!=null?S.voltage.toFixed(1).replace('.',',')+' V':'–';
+  {const bt=S.batt,v=bt&&bt.avg!=null?bt.avg:S.voltage;$('volt').style.color=!bt||!bt.enabled||v==null?'':(v<bt.off?'var(--bad)':v<bt.warn?'var(--heat)':'')}
+  $('pwr').textContent=S.power?(S.power>=1000?nf(S.power/1000,1)+' kW':S.power+' W'):'0 W';
+  $('flame').textContent=S.flame?'An':'Aus';
+  $('fuel').textContent=S.fuelRate?nf(S.fuelRate,2):'0';
+  document.querySelectorAll('.mbtn').forEach(x=>{const a=x.dataset.mode==mode;x.classList.toggle('act',a);x.setAttribute('aria-pressed',a);x.title=a?'Nochmal tippen zum Ausschalten':''});
+  selDur=S.duration;  // aus: Vorwahl (nach dem Ausschalten wieder 1 h), an: laufende Dauer
+  renderDur();
+  $('durInfo').textContent=mode!='off'?'· läuft':'';
+  // Timer
+  const t=S.timer||{};
+  if(t.active){$('timerActive').style.display='block';$('timerForm').style.display='none';
+    let tl;
+    if(t.depart){const p=S.preheat||{};const dep=t.in>=0?new Date(Date.now()+(t.in-age)*1000):null;const st=dep&&p.minutes?new Date(dep-p.minutes*60000):null;
+      tl=`<b>Warm um ${t.at||'?'}</b><span>${t.target} °C · ${st?'Start ca. '+pad(st.getHours())+':'+pad(st.getMinutes())+' ('+p.minutes+' min bei '+fmtT(p.temp)+')':preText()}</span>`}
+    else tl=`<b>${t.at?'um '+t.at:'Start geplant'}</b><span>${t.in>=0?'in '+fmtSec(Math.max(0,t.in-age))+' · ':''}${t.mode=='vent'?'Lüften':'Heizen'} · ${durLabel(t.duration)}${t.mode=='heat'?' · '+t.target+' °C':''}</span>`;
+    $('timerActive').innerHTML=`<div class="tactive"><div class="ic ${t.mode=='vent'?'v':''}">${t.mode=='vent'?FAN:FLAME}</div><div class="tx">${tl}</div><button class="btn small danger" id="tCancel">Löschen</button></div>`;
+    $('tCancel').onclick=async()=>{await api('/api/timer',{cancel:true});toast('Timer gelöscht');refresh()};
+  }else{$('timerActive').style.display='none';$('timerForm').style.display='block';if(tKind=='dep')tPreview()}
+  // Geräteinfo
+  $('devInfo').innerHTML=[['W-Bus',S.online?'verbunden':'keine Antwort'],['Zustand',S.stateText+' (0x'+(S.state>=0?S.state.toString(16):'??')+')'],
+    ['Glühstift',(S.glow??0)+' %'],['Dosierpumpe',(S.pump??0)+' Hz'],['Betriebsstunden',S.opHours!=null?S.opHours+' h':'–'],['Starts',S.starts??'–'],
+    ['Telegramme ok/Fehler',S.bus?S.bus.ok+' / '+S.bus.err:'–'],['WLAN',S.wifi?((S.wifi.ssid?S.wifi.ssid+', ':'')+S.wifi.ip+' ('+S.wifi.rssi+' dBm)'):'–'],['MQTT',S.mqtt?'verbunden':'getrennt'],['Firmware',S.fw||'–'],['Batterie',S.batt?(S.batt.type+(S.batt.avg!=null?' · Ø '+fmtV(S.batt.avg):'')+(S.batt.enabled?'':' · Schutz aus')):'–'],['Zugriff',REMOTE?'Fernzugriff über Broker':'lokal im WLAN']]
+    .map(([k,v])=>`<span>${k}</span><b>${v}</b>`).join('');
+}
+function showVlv(){$('vLvl').textContent=vlv;$('vSmall').textContent=vlv;$('vRange').value=vlv}
+function showTgt(){$('tgt').textContent=tgt;$('tgtSmall').textContent=tgt;$('tRange').value=tgt}
+function renderDur(){
+  $('durChips').innerHTML=DUR.map(([m,l])=>`<div class="chip ${m==selDur?'act':''}" data-d="${m}">${l}</div>`).join('');
+  $('durChips').querySelectorAll('.chip').forEach(c=>c.onclick=async()=>{
+    selDur=+c.dataset.d;renderDur();
+    try{await api('/api/duration',{duration:selDur});toast(S&&S.mode!='off'?'Laufzeit: '+durLabel(selDur)+' ab jetzt':'Laufzeit: '+durLabel(selDur))}catch(e){toast('Fehler: '+e.message)}
+    refresh()});
+}
+async function refresh(){
+  if(REMOTE){render();return}
+  try{S=await api('/api/status');render()}
+  catch(e){if(!S&&!demo&&(location.protocol=='file:'||location.search.includes('demo'))){demo=true;S=await api('/api/status');render();loadSched();loadSettings()}else{$('dot').className='dot off'}}
+}
+
+/* ---------- Steuerung ---------- */
+// Heizen/Lüften: Tippen schaltet ein (und den anderen Modus um), nochmal tippen schaltet aus
+document.querySelectorAll('.mbtn').forEach(b=>b.onclick=async()=>{
+  const m=(S&&S.mode==b.dataset.mode)?'off':b.dataset.mode;
+  try{await api('/api/control',{action:m,duration:selDur,target:tgt});if(S)S.mode=m;
+    toast(m=='off'?(b.dataset.mode=='heat'?'Heizen':'Lüften')+' aus':(m=='heat'?'Heizen':'Lüften')+' · '+durLabel(selDur))}
+  catch(e){toast('Fehler: '+e.message)}
+  setTimeout(refresh,300)});
+let tgtTimer;
+function changeTgt(v){tgt=Math.max(5,Math.min(35,v));showTgt();tgtLock=Date.now()+4000;clearTimeout(tgtTimer);
+  tgtTimer=setTimeout(async()=>{await api('/api/target',{target:tgt});toast('Ziel '+tgt+' °C')},600)}
+let vlvTimer;
+function changeVlv(v){vlv=Math.max(0,Math.min(100,Math.round(v/10)*10));showVlv();vlvLock=Date.now()+4000;if(S&&S.mode=='vent'&&vlv){const arc=$('arc');arc.setAttribute('stroke-dasharray',(433.5*vlv/100)+' 578')}clearTimeout(vlvTimer);
+  vlvTimer=setTimeout(async()=>{try{await api('/api/ventlevel',{level:vlv});toast(vlv?'Lüfter '+vlv+' %':'Lüften aus');if(!vlv)setTimeout(refresh,300)}catch(e){toast('Fehler: '+e.message)}},600)}
+$('vMinus').onclick=()=>changeVlv(vlv-10);$('vPlus').onclick=()=>changeVlv(vlv+10);$('vRange').oninput=e=>changeVlv(+e.target.value);
+$('tMinus').onclick=()=>changeTgt(tgt-1);$('tPlus').onclick=()=>changeTgt(tgt+1);$('tRange').oninput=e=>changeTgt(+e.target.value);
+
+/* ---------- Timer ---------- */
+let tKind='dep',tMode='heat';
+const IN=[[1,'1 h'],[2,'2 h'],[3,'3 h'],[4,'4 h'],[6,'6 h'],[8,'8 h'],[10,'10 h'],[12,'12 h']];
+$('inChips').innerHTML=IN.map(([h,l])=>`<div class="chip" data-h="${h}">${l}</div>`).join('');
+$('inChips').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{$('inH').value=c.dataset.h;$('inM').value=0;tPreview()});
+$('tDur').innerHTML=$('shDur').innerHTML=DUR.map(([m,l])=>`<option value="${m}">${l}</option>`).join('');$('tDur').value=60;
+function seg(id,cb){$(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{$(id).querySelectorAll('button').forEach(x=>x.className='');
+  b.className='act'+(b.dataset.m=='heat'?' h':b.dataset.m=='vent'?' v':'');cb(b.dataset.k||b.dataset.m)})}
+seg('tKind',k=>{tKind=k;$('tIn').style.display=k=='in'?'block':'none';$('tAt').style.display=k!='in'?'block':'none';
+  $('tOpts').style.display=k=='dep'?'none':'block';$('tAtLbl').textContent=k=='dep'?'Abfahrtszeit (nächstes Vorkommen)':'Uhrzeit (nächstes Vorkommen)';tPreview()});
+seg('tMode',m=>{tMode=m;tPreview()});
+function tMinutes(){
+  if(tKind=='in')return(+$('inH').value||0)*60+(+$('inM').value||0);
+  return Math.ceil((tAtDate()-new Date())/60000)}
+function tAtDate(){const [h,m]=$('atTime').value.split(':').map(Number);const n=new Date(),t=new Date();t.setHours(h,m,0,0);if(t<=n)t.setDate(t.getDate()+1);return t}
+function preText(){const p=S&&S.preheat;if(!p)return'';return p.minutes?`ca. ${p.minutes} min Vorheizen bei ${fmtT(p.temp)} (${p.source})`:`bei ${fmtT(p.temp)} kein Vorheizen nötig`}
+function tPreview(){const m=tMinutes();if(m<1){$('tPreview').textContent='';return}
+  const at=tKind=='in'?new Date(Date.now()+m*60000):tAtDate();const tom=at.getDate()!=new Date().getDate();
+  if(tKind=='dep'){const p=S&&S.preheat;const st=p&&p.minutes?new Date(at-p.minutes*60000):null;
+    $('tPreview').textContent=`Warm ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr, ${tgt} °C`+(st?` · Start ca. ${pad(st.getHours())}:${pad(st.getMinutes())} (${preText()})`:p?` · ${preText()}`:'')+'. Die Startzeit wird bis zuletzt an die aktuelle Temperatur angepasst.';return}
+  $('tPreview').textContent=`Start ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr (in ${fmtSec(m*60)})`}
+['inH','inM','atTime','tDur'].forEach(i=>$(i).oninput=tPreview);
+$('tSet').onclick=async()=>{const m=tMinutes();if(m<1)return toast('Bitte Startzeit wählen');
+  try{await api('/api/timer',tKind=='dep'?{inMinutes:m,depart:true,mode:'heat',target:tgt}:{inMinutes:m,mode:tMode,duration:+$('tDur').value,target:tgt});toast('Timer gesetzt');refresh()}catch(e){toast('Fehler: '+e.message)}};
+
+/* ---------- Wochenplan ---------- */
+async function loadSched(){try{const r=await api('/api/schedule');sched=r.entries||[];renderSched()}catch(e){}}
+function renderSched(){
+  const L=$('schedList');
+  if(!sched.length){L.innerHTML='<div class="empty">Noch keine Einträge.<br>Mit „+ Neu“ z.B. werktags 6:30 Uhr vorheizen.</div>';return}
+  const order=sched.map((s,i)=>[s,i]).sort((a,b)=>(a[0].hour*60+a[0].minute)-(b[0].hour*60+b[0].minute));
+  L.innerHTML=order.map(([s,i])=>`<div class="sitem ${s.enabled?'':'dis'}"><div class="t">${pad(s.hour)}:${pad(s.minute)}</div>
+   <div class="meta" data-i="${i}"><div class="days">${DAYS.map((d,k)=>`<i class="${s.days>>k&1?'on':''}">${d}</i>`).join('')}</div>
+   <div class="sub">${s.kind=='depart'?`<span class="heat-c">Warm um</span> · ${s.target} °C · Start automatisch`:`<span class="${s.mode=='heat'?'heat-c':'vent-c'}">Start: ${s.mode=='heat'?'Heizen':'Lüften'}</span> · ${durLabel(s.duration)}${s.mode=='heat'?' · '+s.target+' °C':''}`}</div></div>
+   <label class="toggle"><input type="checkbox" data-t="${i}" ${s.enabled?'checked':''}><span></span></label>
+   <button class="del" data-del="${i}" title="Eintrag löschen" aria-label="Eintrag löschen"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></button></div>`).join('');
+  L.querySelectorAll('.meta').forEach(m=>m.onclick=()=>openSheet(+m.dataset.i));
+  L.querySelectorAll('input[data-t]').forEach(c=>c.onchange=()=>{sched[+c.dataset.t].enabled=c.checked;saveSched()});
+  L.querySelectorAll('button[data-del]').forEach(b=>b.onclick=()=>{const s=sched[+b.dataset.del];
+    if(!confirm(`Eintrag ${pad(s.hour)}:${pad(s.minute)} Uhr (${s.mode=='heat'?'Heizen':'Lüften'}) wirklich löschen?`))return;
+    sched.splice(+b.dataset.del,1);saveSched()});
+}
+async function saveSched(){try{await api('/api/schedule',{entries:sched});toast('Wochenplan gespeichert')}catch(e){toast('Fehler: '+e.message)}renderSched()}
+function openSheet(i){
+  editIdx=i;ed=i>=0?{...sched[i]}:{enabled:true,days:31,hour:7,minute:30,mode:'heat',kind:'depart',duration:60,target:tgt};
+  if(!ed.kind)ed.kind='start';shKindUI();
+  $('shTitle').textContent=i>=0?'Eintrag bearbeiten':'Neuer Eintrag';$('shDel').style.display=i>=0?'block':'none';
+  $('shTime').value=pad(ed.hour)+':'+pad(ed.minute);$('shDur').value=ed.duration;$('shTgt').textContent=ed.target;
+  $('shMode').querySelectorAll('button').forEach(b=>b.className=b.dataset.m==ed.mode?'act '+(ed.mode=='heat'?'h':'v'):'');
+  renderDays();$('sheet').classList.add('open');$('sheetBg').classList.add('open')}
+function closeSheet(){$('sheet').classList.remove('open');$('sheetBg').classList.remove('open')}
+function renderDays(){$('shDays').innerHTML=DAYS.map((d,k)=>`<button class="${ed.days>>k&1?'act':''}" data-k="${k}">${d}</button>`).join('');
+  $('shDays').querySelectorAll('button').forEach(b=>b.onclick=()=>{ed.days^=1<<b.dataset.k;renderDays()})}
+document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{ed.days=+b.dataset.preset;renderDays()});
+seg('shMode',m=>ed.mode=m);
+function shKindUI(){$('shKind').querySelectorAll('button').forEach(b=>b.className=b.dataset.k==ed.kind?'act':'');
+  const d=ed.kind=='depart';$('shStartOpts').style.display=d?'none':'block';$('shDepHint').style.display=d?'block':'none';$('shTimeLbl').textContent=d?'Abfahrtszeit':'Startzeit'}
+seg('shKind',k=>{ed.kind=k;if(k=='depart')ed.mode='heat';shKindUI()});
+$('shTm').onclick=()=>{ed.target=Math.max(5,ed.target-1);$('shTgt').textContent=ed.target};
+$('shTp').onclick=()=>{ed.target=Math.min(35,ed.target+1);$('shTgt').textContent=ed.target};
+$('addSched').onclick=()=>{if(sched.length>=12)return toast('Maximal 12 Einträge');openSheet(-1)};
+$('sheetBg').onclick=closeSheet;
+$('shSave').onclick=()=>{const [h,m]=$('shTime').value.split(':').map(Number);if(!ed.days)return toast('Mindestens einen Tag wählen');
+  Object.assign(ed,{hour:h,minute:m,duration:+$('shDur').value});if(editIdx>=0)sched[editIdx]=ed;else sched.push(ed);closeSheet();saveSched()};
+$('shDel').onclick=()=>{if(!confirm('Diesen Eintrag wirklich löschen?'))return;sched.splice(editIdx,1);closeSheet();saveSched()};
+
+/* ---------- Einstellungen ---------- */
+async function loadSettings(){try{const s=await api('/api/settings');
+  $('sSsid').value=s.ssid||'';$('sHost').value=s.host||'';$('mEn').checked=!!s.mqttEnabled;$('mHost').value=s.mqttHost||'';$('mPort').value=s.mqttPort||8883;$('mTls').checked=s.mqttTls!==false;$('sSsid2').value=s.ssid2||'';
+  $('mBase').value=s.mqttBase||'HH9000';$('mUser').value=s.mqttUser||'';$('wUser').value=s.webUser||'admin';
+  $('wxPlace').textContent=s.wxPlace||(s.wxLat!=null?s.wxLat.toFixed(2)+', '+s.wxLon.toFixed(2):'nicht gesetzt');
+  $('dSrc').value=s.depSource??0;$('dMax').value=s.depMax??60;$('dAfter').value=s.depAfter??10;if(Array.isArray(s.depCurve)&&s.depCurve.length==10)DC=s.depCurve.slice();dDraw();
+  $('mMode').value=s.maintMode??1;$('mDays').value=s.maintDays??30;$('mRun').value=s.maintRunMin??15;$('mAt').value=s.maintAt||'12:00';mAutoUI();
+  $('bProt').checked=s.battProt!==false;$('bType').value=s.battType??1;$('bWarn').value=(s.battWarn??12.2).toFixed(1);$('bOff').value=(s.battOff??11.8).toFixed(1);bInfo();
+  $('wPass').placeholder=s.webPassSet?'gesetzt – leer = unverändert':'leer = kein Schutz'}catch(e){}}
+const BPRE={0:[12.2,11.9,'Blei (Nass), Ruhespannung: 12,7 V voll · 12,2 V ≈ 50 % (tiefer schadet bei häufiger Entladung) · 11,9 V ≈ 20 %.'],
+  1:[12.2,11.8,'AGM, Ruhespannung: 12,8 V voll · 12,2 V ≈ 50 % · 11,8 V ≈ 15 %. Verträgt etwas tiefere Entladung als Nass-Blei.'],
+  2:[12.2,11.8,'Gel, Ruhespannung: 12,8 V voll · 12,2 V ≈ 50 % · 11,8 V ≈ 15 %.'],
+  3:[12.8,12.4,'LiFePO4: Die Spannung bleibt lange fast gleich (13,0–13,3 V) und fällt erst am Ende steil ab. 12,8 V ≈ 20 % · 12,4 V ≈ 5–10 %. Unter ca. 10 V schaltet das BMS ab, das schadet den Zellen.'],
+  4:[null,null,'Eigene Werte: Warnung muss über der Abschaltung liegen (9–14,5 V).']};
+function fwMsg(t){$('fwMsg').textContent=t}
+$('fwGo').onclick=()=>{
+  const f=$('fwFile').files[0];
+  if(!f)return toast('Bitte zuerst die .bin-Datei wählen');
+  if(/merged|bootloader|partitions/i.test(f.name))return toast('Falsche Datei: bitte HH9000.ino.bin wählen');
+  if(f.size<200000||f.size>3100000)return toast('Ungewöhnliche Dateigröße – ist das die richtige Firmware?');
+  if(S&&S.mode!=='off')return toast('Bitte die Heizung zuerst ausschalten');
+  $('fwGo').disabled=true;$('fwProg').hidden=false;$('fwBar').style.width='0';fwMsg('Lade hoch …');
+  if(demo){let p=0;const t=setInterval(()=>{p+=10;$('fwBar').style.width=p+'%';if(p>=100){clearInterval(t);fwMsg('Demo: Update erfolgreich (simuliert).');$('fwGo').disabled=false}},150);return}
+  const fd=new FormData();fd.append('firmware',f,f.name);
+  const x=new XMLHttpRequest();x.open('POST','/api/update');x.setRequestHeader('X-HH9000','1');
+  x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded/e.total*100);$('fwBar').style.width=p+'%';fwMsg(p<100?'Lade hoch … '+p+' %':'Prüfe und schreibe …')}};
+  x.onload=()=>{let r={};try{r=JSON.parse(x.responseText)}catch(e){}
+    if(x.status===200&&r.ok){fwMsg('Erfolgreich. Der ESP startet neu, die Seite lädt in ca. 20 s neu …');setTimeout(()=>location.reload(),20000)}
+    else{fwMsg('Fehler: '+(r.error||('HTTP '+x.status)));$('fwBar').style.width='0';$('fwGo').disabled=false}};
+  x.onerror=()=>{fwMsg('Verbindung abgebrochen. Bitte im selben WLAN wie der ESP versuchen.');$('fwGo').disabled=false};
+  x.send(fd)};
+let wxSel=null;
+/* ---------- Automatisch speichern ---------- */
+const saveT={};
+function autoSave(key,body,msg,delay=700){clearTimeout(saveT[key]);saveT[key]=setTimeout(async()=>{
+  try{await api('/api/settings',typeof body=='function'?body():body);toast(msg);refresh()}catch(e){toast('Fehler: '+e.message)}},delay)}
+
+/* ---------- Vorheizkurve ---------- */
+const DC_DEF=[40,35,30,25,20,15,10,5,2,0],DC_T=[-20,-15,-10,-5,0,5,10,15,20,25];
+let DC=DC_DEF.slice(),dSel=-1,dDrag=false;
+const DG={l:34,r:330,t:18,b:182};  // Zeichenfläche im viewBox 340x210
+function dMaxV(){return Math.max(5,Math.min(180,+$('dMax').value||60))}
+function dX(i){return DG.l+(DG.r-DG.l)*i/(DC.length-1)}
+function dY(v){return DG.b-(DG.b-DG.t)*Math.min(v,dMaxV())/dMaxV()}
+function dDraw(){const svg=$('dCurve'),mx=dMaxV(),st=mx<=30?5:mx<=90?10:30;let h='';
+  for(let v=0;v<=mx;v+=st)h+=`<line class="gl" x1="${DG.l}" x2="${DG.r}" y1="${dY(v)}" y2="${dY(v)}"/><text class="ax" x="${DG.l-6}" y="${dY(v)+3.5}" text-anchor="end">${v}</text>`;
+  DC_T.forEach((t,i)=>h+=`<text class="ax" x="${dX(i)}" y="${DG.b+16}" text-anchor="middle">${t>0?'+':''}${t}</text>`);
+  h+=`<text class="ax" x="${DG.l-6}" y="${DG.t-7}" text-anchor="end">min</text><text class="ax" x="${DG.r}" y="${DG.b+28}" text-anchor="end">°C</text>`;
+  const p=S&&S.preheat;if(p&&p.temp!=null){const x=DG.l+(DG.r-DG.l)*(Math.max(-20,Math.min(25,p.temp))+20)/45;
+    h+=`<line class="now" x1="${x}" x2="${x}" y1="${DG.t}" y2="${DG.b}"/><text class="ax" x="${Math.min(DG.r-2,Math.max(DG.l+30,x))}" y="${DG.t-7}" text-anchor="middle" style="fill:#3093e6">jetzt ${String(Math.round(p.temp*10)/10).replace('.',',')}°</text>`}
+  h+=`<polyline points="${DC.map((v,i)=>dX(i)+','+dY(v)).join(' ')}" fill="none" stroke="#e86a24" stroke-width="2.5" stroke-linejoin="round"/>`;
+  DC.forEach((v,i)=>{h+=`<text class="vl" x="${dX(i)}" y="${dY(v)-10}" text-anchor="middle">${v}</text><circle class="pt${i==dSel?' sel':''}" cx="${dX(i)}" cy="${dY(v)}" r="5.5"/>`});
+  svg.innerHTML=h;
+  $('dSelTxt').textContent=dSel<0?'Punkt antippen oder ziehen':`${DC_T[dSel]>0?'+':''}${DC_T[dSel]} °C: ${DC[dSel]} min Vorlauf`;
+  $('dSelM').disabled=$('dSelP').disabled=dSel<0}
+function dSave(){autoSave('dep',()=>({depCurve:DC,depMax:dMaxV(),depAfter:+$('dAfter').value,depSource:+$('dSrc').value}),'Vorheizen gespeichert')}
+function dPtr(e){const svg=$('dCurve'),r=svg.getBoundingClientRect();return{x:(e.clientX-r.left)*340/r.width,y:(e.clientY-r.top)*210/r.height}}
+function dSet(i,v){v=Math.max(0,Math.min(dMaxV(),Math.round(v)));if(DC[i]!==v){DC[i]=v;dDraw();dSave()}}
+$('dCurve').onpointerdown=e=>{const q=dPtr(e);dSel=Math.max(0,Math.min(DC.length-1,Math.round((q.x-DG.l)/((DG.r-DG.l)/(DC.length-1)))));
+  dDrag=true;$('dCurve').setPointerCapture(e.pointerId);if(Math.abs(q.y-dY(DC[dSel]))>18)dSet(dSel,(DG.b-q.y)/(DG.b-DG.t)*dMaxV());else dDraw()};
+$('dCurve').onpointermove=e=>{if(!dDrag||dSel<0)return;const q=dPtr(e);dSet(dSel,(DG.b-q.y)/(DG.b-DG.t)*dMaxV())};
+$('dCurve').onpointerup=$('dCurve').onpointercancel=()=>{dDrag=false};
+$('dSelM').onclick=()=>{if(dSel>=0)dSet(dSel,DC[dSel]-1)};$('dSelP').onclick=()=>{if(dSel>=0)dSet(dSel,DC[dSel]+1)};
+$('dReset').onclick=()=>{DC=DC_DEF.slice();dSel=-1;dDraw();dSave()};
+$('dMax').onchange=()=>{$('dMax').value=dMaxV();DC=DC.map(v=>Math.min(v,dMaxV()));dDraw();dSave()};
+$('dAfter').onchange=dSave;$('dSrc').onchange=dSave;
+$('wxSearch').onclick=async()=>{const q=$('wxQ').value.trim();if(q.length<2)return toast('Bitte einen Ort eingeben');
+  $('wxRes').innerHTML='<p class="hint">Suche …</p>';
+  try{const r=await api('/api/geocode',{q});$('wxRes').innerHTML=r.results.map((x,i)=>`<button class="wxr" data-i="${i}">${x.name}<br><small>${x.region} · ${x.lat.toFixed(2)}, ${x.lon.toFixed(2)}</small></button>`).join('');
+    $('wxRes').querySelectorAll('.wxr').forEach(b=>b.onclick=async()=>{const x=r.results[+b.dataset.i];
+      try{await api('/api/settings',{wxLat:x.lat,wxLon:x.lon,wxPlace:x.name+(x.region?', '+x.region:'')});toast('Standort gespeichert');$('wxRes').innerHTML='';loadSettings();setTimeout(refresh,800)}catch(e){toast('Fehler: '+e.message)}})}
+  catch(e){$('wxRes').innerHTML='<p class="hint">'+e.message+'</p>'}};
+$('wxQ').onkeydown=e=>{if(e.key==='Enter')$('wxSearch').onclick()};
+function mAutoUI(){$('mAuto').style.display=$('mMode').value=='2'?'block':'none'}
+function mSave(){autoSave('maint',()=>({maintMode:+$('mMode').value,maintDays:+$('mDays').value,maintRunMin:+$('mRun').value,maintAt:$('mAt').value}),'Wartungslauf gespeichert')}
+$('mMode').onchange=()=>{mAutoUI();mSave()};['mDays','mRun','mAt'].forEach(id=>$(id).onchange=mSave);
+async function maintRun(){try{await api('/api/maint/run',{});toast('Wartungslauf gestartet');setTimeout(refresh,300)}catch(e){toast('Fehler: '+e.message)}}
+$('maintRunNow').onclick=maintRun;$('mRunBtn').onclick=maintRun;
+/* ---------- Statistik ---------- */
+const C_HEAT='#e86a24',C_OUT='#3093e6',C_VOLT='var(--ch-volt)';
+const MON=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+const nf=(v,d)=>v==null?'–':Number(v).toFixed(d).replace('.',',');
+function fmtH(h){if(!h)return'0 h';const m=Math.round(h*60);return m<60?m+' min':Math.floor(m/60)+':'+String(m%60).padStart(2,'0')+' h'}
+function niceMax(v){if(v<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(v)));const f=v/e;return(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*e}
+function ticks(lo,hi,n){const step=niceMax((hi-lo)/n);const a=Math.floor(lo/step)*step,r=[];for(let v=a;v<=hi+step*1e-6;v+=step)r.push(+v.toFixed(6));return r}
+function tipAt(box,tip,x,html){tip.innerHTML=html;tip.classList.add('on');const w=box.clientWidth,tw=tip.offsetWidth;tip.style.left=Math.max(0,Math.min(w-tw,x-tw/2))+'px'}
+/* Balkendiagramm: eine Reihe, Balken mit 2px Abstand und gerundeter Oberkante */
+function barChart(box,items,o){
+  const W=Math.max(280,box.clientWidth||320),H=150,L=34,R=4,T=10,B=22,iw=W-L-R,ih=H-T-B;
+  const max=niceMax(Math.max(o.minMax||0,...items.map(i=>i.v)));const tk=ticks(0,max,3);const bw=iw/items.length;
+  let g='';tk.forEach(v=>{const y=T+ih-v/max*ih;g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y}" y2="${y}"/><text class="ax" x="${L-6}" y="${y+4}" text-anchor="end">${o.fmt(v)}</text>`});
+  let bars='';items.forEach((it,i)=>{const h=it.v/max*ih;if(h>0.5){const x=L+i*bw+1,w=Math.max(1,bw-2),y=T+ih-h,r=Math.min(4,w/2,h);
+      bars+=`<path d="M${x},${T+ih}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${T+ih}Z" fill="${o.color}"/>`}
+    if(it.lbl)bars+=`<text class="ax" x="${L+i*bw+bw/2}" y="${H-6}" text-anchor="middle">${it.lbl}</text>`});
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.aria}">${g}<line x1="${L}" x2="${W-R}" y1="${T+ih}" y2="${T+ih}" style="stroke:var(--ch-base)"/>${bars}<line id="hl" y1="${T}" y2="${T+ih}" stroke="#fff" stroke-opacity="0" /></svg><div class="tip"></div>`;
+  const svg=box.querySelector('svg'),tip=box.querySelector('.tip');
+  const move=e=>{const r=svg.getBoundingClientRect();const x=(e.clientX-r.left)*W/r.width;const i=Math.floor((x-L)/bw);if(i<0||i>=items.length){tip.classList.remove('on');return}
+    tipAt(box,tip,(L+i*bw+bw/2)*r.width/W,items[i].tip)};
+  svg.addEventListener('pointermove',move);svg.addEventListener('pointerdown',move);svg.addEventListener('pointerleave',()=>tip.classList.remove('on'));
+}
+/* Liniendiagramm über 24 h: eine y-Achse, Lücken bei fehlenden Werten, Heizphasen als Band */
+function lineChart(box,d,o){
+  const W=Math.max(280,box.clientWidth||320),H=170,L=34,R=6,T=10,B=22,iw=W-L-R,ih=H-T-B;
+  const span=d.span||86400,week=span>86400*2,now=Date.now()/1000,t0=now-span;const X=t=>L+(t-t0)/span*iw;
+  const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+  let vals=[];o.series.forEach(se=>se.v.forEach(v=>{if(v!=null)vals.push(v)}));(o.lines||[]).forEach(l=>vals.push(l.v));
+  if(!vals.length){box.innerHTML=`<p class="hint">Noch keine Daten. Der Verlauf füllt sich mit einem Punkt ${week?'alle 10 Minuten':'pro Minute'}.</p>`;return}
+  let lo=Math.min(...vals),hi=Math.max(...vals);if(hi-lo<o.minSpan){const m=(hi+lo)/2;lo=m-o.minSpan/2;hi=m+o.minSpan/2}
+  const tk=ticks(lo,hi,4);lo=Math.min(lo,tk[0]);hi=Math.max(hi,tk[tk.length-1]);const Y=v=>T+ih-(v-lo)/(hi-lo)*ih;
+  let g='';tk.forEach(v=>{if(v<lo-1e-9||v>hi+1e-9)return;const y=Y(v);g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y}" y2="${y}"/><text class="ax" x="${L-6}" y="${y+4}" text-anchor="end">${o.fmt(v)}</text>`});
+  if(week){ // Tagesgrenzen um Mitternacht, Wochentag mittig im Tag
+    const m=new Date(t0*1000);m.setHours(24,0,0,0);
+    for(let mt=m.getTime()/1000;mt<now;mt+=86400){const x=X(mt);g+=`<line class="gl" x1="${x}" x2="${x}" y1="${T}" y2="${T+ih}"/>`}
+    const c=new Date(t0*1000);c.setHours(12,0,0,0);
+    for(let ct=c.getTime()/1000;ct<now;ct+=86400){if(ct<t0+3600*3||ct>now-3600*3)continue;g+=`<text class="ax" x="${X(ct)}" y="${H-6}" text-anchor="middle">${WD[new Date(ct*1000).getDay()]}</text>`}
+  }else for(let h=0;h<=24;h+=6){const tt=t0+h*3600;const dt=new Date(tt*1000);g+=`<text class="ax" x="${X(tt)}" y="${H-6}" text-anchor="${h==0?'start':h==24?'end':'middle'}">${h==24?'jetzt':pad(dt.getHours())+':'+pad(dt.getMinutes())}</text>`}
+  let band='';const st=d.interval||(d.step||1)*60;for(let i=0;i<d.t.length;i++){if(d.f[i]&4){let j=i;while(j+1<d.t.length&&(d.f[j+1]&4)&&d.t[j+1]-d.t[j]<=st*1.5)j++;
+    band+=`<rect x="${X(d.t[i])}" y="${T}" width="${Math.max(1.5,X(d.t[j]+st)-X(d.t[i]))}" height="${ih}" fill="${C_HEAT}" fill-opacity=".14"/>`;i=j}}
+  let ln='';(o.lines||[]).forEach(l=>{const y=Y(l.v);ln+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" style="stroke:${l.c}" stroke-width="1.5" stroke-dasharray="5 4"/>`});
+  let paths='';o.series.forEach(se=>{let dd='',pen=false;for(let i=0;i<d.t.length;i++){const v=se.v[i];const gap=i>0&&d.t[i]-d.t[i-1]>st*2.5;
+      if(v==null||gap){pen=false;if(v==null)continue}
+      if(pen&&se.stepLine)dd+='H'+X(d.t[i]).toFixed(1);  // Stufe: erst waagerecht, dann senkrecht
+      dd+=(pen?'L':'M')+X(d.t[i]).toFixed(1)+','+Y(v).toFixed(1);pen=true}
+    paths+=`<path d="${dd}" fill="none" style="stroke:${se.c}" stroke-width="${se.dash?1.5:2}" ${se.dash?'stroke-dasharray="5 4"':''} stroke-linejoin="round" stroke-linecap="round"/>`});
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.aria}">${band}${g}${ln}${paths}<line class="xh" y1="${T}" y2="${T+ih}" style="stroke:var(--ch-cross)" stroke-opacity="0"/><g class="dots"></g></svg><div class="tip"></div>`;
+  const svg=box.querySelector('svg'),tip=box.querySelector('.tip'),xh=svg.querySelector('.xh'),dots=svg.querySelector('.dots');
+  const move=e=>{const r=svg.getBoundingClientRect();const x=(e.clientX-r.left)*W/r.width;if(x<L||x>W-R){tip.classList.remove('on');return}
+    const tt=t0+(x-L)/iw*span;let bi=-1,bd=1e9;d.t.forEach((t,i)=>{const dd=Math.abs(t-tt);if(dd<bd){bd=dd;bi=i}});if(bi<0||bd>st*3){tip.classList.remove('on');xh.setAttribute('stroke-opacity',0);dots.innerHTML='';return}
+    const px=X(d.t[bi]);xh.setAttribute('x1',px);xh.setAttribute('x2',px);xh.setAttribute('stroke-opacity',.35);
+    const dt=new Date(d.t[bi]*1000);let html=`<b>${week?WD[dt.getDay()]+' '+dt.getDate()+'.'+(dt.getMonth()+1)+'. ':''}${pad(dt.getHours())}:${pad(dt.getMinutes())}</b>${d.f[bi]&4?' · Heizen':d.f[bi]&2?' · Lüften':''}`;let dh='';
+    o.series.forEach(se=>{const v=se.v[bi];html+=`<br><i style="${se.dash?'border-top:2px dashed '+se.c+';height:0;background:none':'background:'+se.c}"></i>${se.n}: ${v==null?'–':o.fmt(v,true)}`;if(v!=null)dh+=`<circle cx="${px}" cy="${Y(v)}" r="4" style="fill:${se.c};stroke:var(--ch-ring)" stroke-width="2"/>`});
+    dots.innerHTML=dh;tipAt(box,tip,px*r.width/W,html)};
+  svg.addEventListener('pointermove',move);svg.addEventListener('pointerdown',move);svg.addEventListener('pointerleave',()=>{tip.classList.remove('on');xh.setAttribute('stroke-opacity',0);dots.innerHTML=''});
+}
+let statT=null;
+async function loadStats(){
+  try{
+    const s=await api('/api/stats');const rows=[['Heute',s.today],['Diese Woche',s.week],['Dieser Monat',s.month],['Dieses Jahr',s.year],['Gesamt',s.total]];
+    $('stTable').innerHTML='<tr><th></th><th>Heizen</th><th>Lüften</th><th>Starts</th><th>Diesel</th></tr>'+rows.map(([n,v],i)=>v?`<tr class="${i==4?'tot':''}"><td>${n}</td><td>${fmtH(v.heatH)}</td><td>${fmtH(v.ventH)}</td><td>${v.starts}</td><td>${nf(v.fuelL,v.fuelL<10?2:1)} l</td></tr>`:'').join('');
+    $('stRate').textContent=s.rateLph?nf(s.rateLph,2)+' l/h':'0 l/h';$('stRateTxt').textContent=s.rateLph?'aktueller Verbrauch (geschätzt)':'Brenner aus';
+    $('stSince').textContent=(s.since?'Erfasst seit '+s.since+'. ':'')+(s.stored===false?'Achtung: kein Dateisystem, die Statistik geht beim Neustart verloren.':'Starts = Brennerstarts. Diesel ist eine Schätzung (Korrekturfaktor '+s.factor+' %).');
+    $('fFac').value=s.factor;
+    if(s.days)barChart($('chDays'),s.days.map((x,i)=>{const dt=new Date(x.d+'T12:00');return{v:x.h,lbl:i%5==4||i==29?dt.getDate()+'.':'',tip:`<b>${['So','Mo','Di','Mi','Do','Fr','Sa'][dt.getDay()]} ${dt.getDate()}.${dt.getMonth()+1}.</b><br>Heizen ${fmtH(x.h)} · ${x.s} ${x.s==1?'Start':'Starts'}<br>Diesel ${nf(x.l,2)} l`}}),{color:C_HEAT,fmt:v=>v+' h',minMax:1,aria:'Heizstunden der letzten 30 Tage'});
+    if(s.months)barChart($('chMonths'),s.months.map(x=>{const m=+x.m.slice(5,7);return{v:x.l,lbl:MON[m-1].slice(0,1),tip:`<b>${MON[m-1]} ${x.m.slice(0,4)}</b><br>Diesel ${nf(x.l,1)} l<br>Heizen ${fmtH(x.h)}`}}),{color:C_HEAT,fmt:v=>nf(v,v<1&&v>0?1:0)+' l',minMax:1,aria:'Dieselverbrauch der letzten 12 Monate'});
+    const bt=S&&S.batt;
+    const tempOpt=(h,txt)=>({series:[{n:'Heizgerät',c:C_HEAT,v:h.tin},{n:'Außen',c:C_OUT,v:h.tout},{n:'Ziel',c:C_VOLT,v:h.z||[],dash:true,stepLine:true}],minSpan:6,fmt:(v,full)=>full?nf(v,1)+' °C':nf(v,0)+'°',aria:'Temperaturverlauf '+txt});
+    const voltOpt=(h,txt)=>({series:[{n:'Spannung',c:C_VOLT,v:h.v}],lines:bt?[{v:bt.warn,c:'var(--warn)'},{v:bt.off,c:'var(--bad)'}]:[],minSpan:1,fmt:(v,full)=>nf(v,full?2:1)+' V',aria:'Spannungsverlauf '+txt});
+    const h=await api('/api/history',REMOTE?{range:'24h',step:10}:{range:'24h',step:2});
+    lineChart($('chTemp'),h,tempOpt(h,'der letzten 24 Stunden'));lineChart($('chVolt'),h,voltOpt(h,'der letzten 24 Stunden'));
+    const w=await api('/api/history',REMOTE?{range:'7d',step:6}:{range:'7d',step:2});
+    lineChart($('chTemp7'),w,tempOpt(w,'der letzten 7 Tage'));lineChart($('chVolt7'),w,voltOpt(w,'der letzten 7 Tage'));
+  }catch(e){$('stTable').innerHTML='<tr><td>Statistik nicht verfügbar: '+e.message+'</td></tr>'}
+  clearTimeout(statT);statT=setTimeout(()=>{if($('tab-stat').classList.contains('act')&&!document.hidden)loadStats()},60000);
+}
+$('fFac').onchange=()=>{const f=+$('fFac').value;if(!(f>=50&&f<=200))return toast('Faktor muss zwischen 50 und 200 % liegen');
+  autoSave('ffac',{fuelFactor:f},'Korrekturfaktor gespeichert');setTimeout(loadStats,1200)};
+$('stReset').onclick=async()=>{if(!confirm('Statistik und Verlauf wirklich zurücksetzen? Das lässt sich nicht rückgängig machen.'))return;
+  try{await api('/api/stats/reset',{});toast('Statistik zurückgesetzt');loadStats()}catch(e){toast('Fehler: '+e.message)}};
+/* ---------- Versions-Plakette: führt zum Firmware-Update ---------- */
+$('ver').onclick=()=>halEgg();
+/* ---------- Darstellung ---------- */
+function themeUI(c){$('themeSeg').querySelectorAll('button').forEach(b=>b.className=b.dataset.k==c?'act':'')}
+$('themeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('sh_theme',b.dataset.k)}catch(e){}
+  themeUI(themeApply());toast(b.dataset.k=='dark'?'Dunkles Design':b.dataset.k=='light'?'Helles Design':'Design folgt dem Gerät')});
+themeUI(themeApply());
+try{matchMedia('(prefers-color-scheme: light)').addEventListener('change',()=>themeApply())}catch(e){}
+function bInfo(){const t=+$('bType').value;$('bInfo').textContent=BPRE[t][2]+' Unter Last (Heizung läuft) liegt die Spannung etwas niedriger, die Werte berücksichtigen das bereits.'}
+function bSave(){const w=parseFloat($('bWarn').value),o=parseFloat($('bOff').value);
+  if(!(w>o)||o<9||w>14.5){clearTimeout(saveT.batt);return toast('Warnung muss über der Abschaltung liegen (9–14,5 V)')}
+  autoSave('batt',{battProt:$('bProt').checked,battType:+$('bType').value,battWarn:w,battOff:o},'Batterieschutz gespeichert')}
+$('bType').onchange=()=>{const t=+$('bType').value;if(BPRE[t][0]!=null){$('bWarn').value=BPRE[t][0].toFixed(1);$('bOff').value=BPRE[t][1].toFixed(1)}bInfo();bSave()};
+['bWarn','bOff'].forEach(id=>{$(id).oninput=()=>{$('bType').value=4;bInfo()};$(id).onchange=bSave});
+$('bProt').onchange=bSave;
+$('saveSet').onclick=async()=>{
+  const b={ssid:$('sSsid').value,pass:$('sPass').value,ssid2:$('sSsid2').value,pass2:$('sPass2').value,mqttTls:$('mTls').checked,host:$('sHost').value,mqttEnabled:$('mEn').checked,mqttHost:$('mHost').value,mqttPort:+$('mPort').value,
+    mqttBase:$('mBase').value,mqttUser:$('mUser').value,mqttPass:$('mPass').value,webUser:$('wUser').value,webPass:$('wPass').value};
+  try{const r=await api('/api/settings',b);toast(r.restart?'Gespeichert – ESP startet neu …':'Gespeichert');$('sPass').value=$('sPass2').value=$('mPass').value=$('wPass').value='';if(r.restart&&REMOTE)toast('Gespeichert – ESP startet neu, Verbindung kommt in ca. 30 s zurück')}catch(e){toast('Fehler: '+e.message)}};
+$('wClear').onclick=async()=>{await api('/api/settings',{clearWebPass:true});toast('Passwortschutz entfernt');loadSettings()};
+// Protokoll: "Leeren" blendet nur bisherige Zeilen aus (wie cls), der ESP behält sie (max. 150 Zeilen)
+let LOG={log:[],seq:0},logClr=0;try{logClr=+localStorage.getItem('sh_logclr')||0}catch(e){}
+function logVisible(){const n=LOG.seq?Math.max(0,LOG.seq-logClr):LOG.log.length;return LOG.log.slice(0,n)}
+function logShow(){const v=logVisible();$('log').textContent=v.join('\n')||(logClr?'(geleert – neue Einträge erscheinen hier)':'–')}
+// Systeminfo: letzter Neustart, vorherige Firmware, Rückfall
+async function loadSys(){try{const r=await api('/api/system');
+  $('sysReset').textContent=r.reset||'–';$('sysPrev').textContent=r.prev||(r.rollback?'vorhanden':'keine');
+  $('sysBack').hidden=!r.rollback;
+  $('sysHint').textContent=(r.confirmed===false?'Diese Firmware ist neu und wird nach 90 s fehlerfreiem Lauf bestätigt. ':'')+'Stürzt eine neue Firmware vor der Bestätigung dreimal ab, startet automatisch wieder die vorherige. Hängt der ESP länger als 60 s, startet er neu (Watchdog).'}catch(e){}}
+$('sysBack').onclick=async()=>{if(!confirm('Zur vorherigen Firmware ('+$('sysPrev').textContent+') zurückkehren? Der ESP startet dabei neu.'))return;
+  try{await api('/api/system',{rollback:true});toast('Starte vorherige Firmware …')}catch(e){toast('Fehler: '+e.message)}};
+$('logRefresh').onclick=async()=>{try{LOG=await api('/api/log');if(LOG.seq&&LOG.seq<logClr){logClr=0;try{localStorage.removeItem('sh_logclr')}catch(e){}}logShow()}catch(e){}};
+$('logCls').onclick=()=>{logClr=LOG.seq||0;try{localStorage.setItem('sh_logclr',logClr)}catch(e){}logShow();toast('Anzeige geleert')};
+$('logCopy').onclick=async()=>{const t=logVisible().join('\n');if(!t){toast('Nichts zum Kopieren');return}
+  try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast('Kopiert')};
+$('logSave').onclick=async()=>{await $('logRefresh').onclick();const t=(LOG.log||[]).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t+'\n'],{type:'text/plain'}));const d=new Date();
+  a.download=`hh9000-protokoll-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.txt`;a.click()};
+$('errRead').onclick=async()=>{$('errList').innerHTML='<p class="hint">Lese …</p>';const r=await api('/api/errors');
+  if(!r.ok){$('errList').innerHTML=`<p class="hint">Fehler: ${r.error||'keine Antwort'}</p>`;return}
+  const det=e=>{const d=e.detail;if(d)return `<div class="errd">Zuletzt bei Betriebsstunde ${d.hours} h ${d.minutes} min · ${d.stateText||'Zustand 0x'+d.state.toString(16)} · ${d.temp} °C · ${String(d.voltage.toFixed(1)).replace('.',',')} V</div>`;
+    return e.raw?`<div class="errd">Details (roh): <code>${e.raw}</code></div>`:''};
+  $('errList').innerHTML=r.errors.length?r.errors.map(e=>`<div class="err"><span><code>${e.code}</code> ${e.text}</span><span>${e.count}×</span></div>${det(e)}`).join(''):'<p class="hint">Keine Fehler gespeichert ✓</p>'};
+$('errClear').onclick=async()=>{if(!confirm('Fehlerspeicher wirklich löschen?'))return;const r=await api('/api/errors/clear',{});toast(r.ok?'Fehlerspeicher gelöscht':'Fehler: '+(r.error||''))};
+/* ---------- Erweiterte Optionen ---------- */
+function advShow(o){$('adv').hidden=!o;$('advBtn').textContent='Erweiterte Optionen '+(o?'▴':'▾');$('advBtn').setAttribute('aria-expanded',o);try{localStorage.setItem('sh_adv',o?1:0)}catch(e){}}
+$('advBtn').onclick=()=>advShow($('adv').hidden);
+try{if(localStorage.getItem('sh_adv')=='1')advShow(true)}catch(e){}
+
+/* ---------- Messwert-Scan ---------- */
+let SC=[],scBusy=false;
+function scVal(hex){const b=hex?hex.split(' ').map(x=>parseInt(x,16)):[];let t=b.map(x=>x).join(', ');
+  if(b.length==2)t+='  (16 Bit: '+(b[0]*256+b[1])+')';if(b.length==1)t+='  (−50: '+(b[0]-50)+')';return t}
+function scRender(){const o=$('scOut');if(!SC.length){o.hidden=true;$('scInfo').textContent='';return}
+  const cur=SC[SC.length-1],prev=SC.length>1?SC[SC.length-2]:null,lines=[];
+  lines.push(`Scan ${SC.length} um ${cur.at}${prev?' – verglichen mit Scan '+(SC.length-1)+' um '+prev.at:''}`);
+  for(const [k,v] of Object.entries(cur.r)){if(v==null)continue;const [sub,id]=k.split(':').map(Number);
+    let data=v.split(' ');if(sub&&data[0]==h2(sub)&&data[1]==h2(id))data=data.slice(2);else if(!sub&&data[0]==h2(id))data=data.slice(1);
+    const dh=data.join(' ');let mark='  ';
+    if(prev&&prev.r[k]!=null&&prev.r[k]!==v){const pd=prev.r[k].split(' ').slice(sub?2:1).map(x=>parseInt(x,16)),cd=data.map(x=>parseInt(x,16));
+      const pv=pd.reduce((a,x)=>a*256+x,0),cv=cd.reduce((a,x)=>a*256+x,0);mark=cv>pv?'▲ ':cv<pv?'▼ ':'≠ '}
+    lines.push(`${mark}${sub?'50 30 '+h2(id):'50 '+h2(id)+'   '}  ${dh.padEnd(24)} ${scVal(dh)}`)}
+  o.textContent=lines.join('\n');o.hidden=false}
+$('scBtn').onclick=async()=>{if(scBusy)return;scBusy=true;$('scBtn').disabled=true;
+  const d=new Date(),r={};const jobs=[[0,1,0x3F],[0x30,1,0xFF]];let done=0;const total=0x3F+0xFF;
+  try{for(const [sub,a,z] of jobs)for(let f=a;f<=z;f+=16){const res=await api('/api/scan',{sub,from:f,to:Math.min(z,f+15)});
+      for(const [id,v] of res.res)r[sub+':'+id]=v===''?null:v;done+=Math.min(z,f+15)-f+1;$('scInfo').textContent=`Scan läuft … ${Math.round(done/total*100)} %`}
+    SC.push({at:pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()),r});
+    const n=Object.values(r).filter(v=>v!=null).length;$('scInfo').textContent=`${n} Messwerte gefunden.`+(SC.length==1?' Für den Vergleich nach ein paar Minuten nochmal scannen.':'');scRender()}
+  catch(e){$('scInfo').textContent='Fehler: '+e.message}finally{scBusy=false;$('scBtn').disabled=false}};
+$('scCopy').onclick=async()=>{const t=$('scOut').textContent;if(!t){toast('Noch kein Scan');return}
+  try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast('Kopiert')};
+$('scClear').onclick=()=>{SC=[];scRender()};
+
+/* ---------- W-Bus mithören ---------- */
+let SN=[],snNext=0,snOn=false,snBusy=false;
+const SN_CMD={0x10:'Aus',0x20:'Einschalten',0x21:'Heizen',0x22:'Lüften',0x23:'Zuheizen',0x24:'Umwälzpumpe',0x25:'Boost',0x38:'Diagnose',0x44:'Keep-Alive',0x45:'Komponententest',0x48:'Sonderbefehl',0x50:'Status',0x51:'Identifikation',0x53:'Betriebsdaten',0x56:'Fehlerspeicher',0x57:'CO2-Kalibrierung'};
+const SN_Q={2:'Flags',3:'Aktoren',4:'Aktoren erw.',5:'Messwerte',6:'Zähler',7:'Zustand',0x0A:'Brennzeiten',0x0B:'Betriebszeiten',0x0C:'Startzähler',0x0F:'Glühstift/Pumpe/Gebläse',0x11:'Schwellen',0x13:'Grenzen'};
+const h2=n=>n.toString(16).toUpperCase().padStart(2,'0');
+function snDecode(hex){const b=hex.split(' ').map(x=>parseInt(x,16));if(b.length<3)return'';
+  const src=b[0]>>4,dst=b[0]&15,c=b[2],d=b.slice(3,-1);
+  const who=dst==4?`${h2(src).slice(1)}→Heizung`:src==4?`Heizung→${h2(dst).slice(1)}`:`${h2(src).slice(1)}→${h2(dst).slice(1)}`;
+  if(c==0x7F)return who+': NAK (abgelehnt)'+(d.length?' auf '+h2(d[0]):'');
+  const resp=c&0x80,cc=c&0x7F,name=SN_CMD[cc]||'Befehl '+h2(cc);let t=name;
+  if(cc>=0x20&&cc<=0x25&&d.length){t+=' '+d[0]+' min';if(d.length>1)t+=' + Zusatz '+d.slice(1).map(h2).join(' ')}
+  else if((cc==0x50||cc==0x51)&&d.length){t+=' '+h2(d[0])+(cc==0x50&&SN_Q[d[0]]?' ('+SN_Q[d[0]]+')':'')}
+  else if(cc==0x44&&d.length)t+=' für '+(SN_CMD[d[0]]||h2(d[0]));
+  return who+': '+t+(resp?' – Antwort':'')}
+function snLine(r,full){const ts=(r[0]/1000).toFixed(3).padStart(9)+' s  ';
+  if(r[1]&2)return`${ts}★★★ ${r[2]} ★★★`;
+  return ts+r[2].padEnd(full?0:26)+'  '+((r[1]&1)?snDecode(r[2]):'(gestört/unvollständig)')}
+function snText(){return SN.map(r=>snLine(r,false)).join('\n')}
+function snRender(){const o=$('snOut');o.hidden=!SN.length;if(!SN.length)return;
+  const atEnd=o.scrollTop+o.clientHeight>=o.scrollHeight-20;let list=SN;
+  if($('snNew').checked){const seen=new Set();list=SN.filter(r=>{if(r[1]&2)return true;if(seen.has(r[2]))return false;seen.add(r[2]);return true})}
+  o.textContent=list.slice(-400).map(r=>snLine(r,false)).join('\n');if(atEnd)o.scrollTop=o.scrollHeight}
+function snUi(){$('snBtn').textContent=snOn?'Mithören beenden':'Mithören starten';$('snBtn').className=snOn?'btn danger':'btn';
+  const st=S&&S.sniff;$('snInfo').textContent=snOn?`Läuft${st?' seit '+Math.floor(st.secs/60)+' min':''} · ${SN.filter(r=>r[1]&1).length} Telegramme${st&&st.bad?' · '+st.bad+' gestört':''}`:(SN.length?SN.length+' Einträge vom letzten Mitschnitt':'')}
+async function snPoll(){if(snBusy)return;snBusy=true;
+  try{for(let i=0;i<30;i++){const r=await api('/api/sniff',{from:snNext});
+    if(r.oldest>snNext&&SN.length)SN.push([0,2,'(ältere Einträge überschrieben)']);
+    SN.push(...r.recs);snNext=r.next;snOn=r.on;if(r.recs.length<120)break}
+    snRender();snUi()}catch(e){}finally{snBusy=false}}
+setInterval(()=>{if(snOn||(S&&S.sniff&&!snOn))snPoll()},1000);
+$('snBtn').onclick=async()=>{try{if(!snOn){SN=[];snNext=0}
+  await api('/api/sniff',{on:!snOn});snOn=!snOn;toast(snOn?'Mithören gestartet – ESP sendet nichts':'Mithören beendet');
+  snPoll();refresh()}catch(e){toast('Fehler: '+e.message)}};
+async function snMark(){const t=$('snMarkTxt').value.trim()||'Markierung';if(!snOn){toast('Erst Mithören starten');return}
+  try{await api('/api/sniff',{mark:t,from:snNext});$('snMarkTxt').value='';toast('Markiert: '+t);snPoll()}catch(e){toast('Fehler: '+e.message)}}
+$('snMark').onclick=snMark;$('snMarkTxt').onkeydown=e=>{if(e.key=='Enter')snMark()};
+$('snNew').onchange=snRender;
+$('snCopy').onclick=async()=>{const t=snText();if(!t){toast('Noch nichts aufgezeichnet');return}
+  try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}
+  toast(SN.length+' Zeilen kopiert')};
+$('snSave').onclick=()=>{const t=snText();if(!t){toast('Noch nichts aufgezeichnet');return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t+'\n'],{type:'text/plain'}));
+  const d=new Date();a.download=`wbus-mitschnitt-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.txt`;a.click()};
+$('rawSend').onclick=async()=>{const r=await api('/api/raw',{hex:$('raw').value});const o=$('rawOut');o.style.display='block';o.textContent=`TX:   ${r.tx||''}\nRX:   ${r.rx||'–'}\nRoh:  ${r.raw||'(nichts empfangen)'}\nRX-Pegel: ${r.rxLevel||'–'}${r.error?'\n'+r.error:''}`};
+$('restart').onclick=async()=>{if(!confirm('HH9000 neu starten?'))return;await api('/api/restart',{});toast('Neustart …')};
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('act',x==b));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('act',t.id=='tab-'+b.dataset.tab));
+  if(b.dataset.tab=='plan')loadSched();if(b.dataset.tab=='stat')loadStats();if(b.dataset.tab=='set'){loadSettings();loadSys();$('logRefresh').onclick()}
+  window.scrollTo(0,0)});
+
+if(REMOTE){$('fwLocal').hidden=true;$('fwRemote').hidden=false;remoteInit();}
+refresh();if(!REMOTE){loadSched();loadSettings()}tPreview();
+setInterval(()=>{if(!document.hidden)refresh()},2000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+</script>
+
+<script>
+/* ---------- Easter Eggs (nur Weboberfläche, keine Auswirkung auf die Steuerung) ---------- */
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// 1) HAL 9000: Tipp auf die Versionsnummer, nochmal tippen beendet
+let halTimer=0,halType=0;
+function halEnd(){clearTimeout(halTimer);clearInterval(halType);$('ringBox').classList.remove('halOn');
+  const t=$('halTxt');if(t)t.remove();eggHal=0;if(S)render()}
+function halEgg(){if(Date.now()<eggHal)return halEnd();const D=9000;eggHal=Date.now()+D;
+  const ring=$('ringBox');if(!ring.querySelector('.hal')){const h=document.createElement('div');h.className='hal';ring.appendChild(h)}
+  ring.classList.add('halOn');const tx=document.createElement('div');tx.className='halTxt';tx.id='halTxt';
+  document.querySelector('.heroTop').after(tx);
+  const msg='Es tut mir leid, Dave. Das kann ich leider nicht tun.';let i=0;
+  halType=setInterval(()=>{tx.textContent=msg.slice(0,++i);if(i>=msg.length)clearInterval(halType)},70);
+  halTimer=setTimeout(halEnd,D)}
+
+// 2) "Über 9000!": dreimal schnell auf die Drehzahl-Kachel tippen
+{let taps=[];const tile=$('fan').parentElement;tile.style.cursor='pointer';
+ tile.addEventListener('click',()=>{const n=Date.now();taps=taps.filter(x=>n-x<1500);taps.push(n);
+  if(taps.length<3||n<egg9k)return;taps=[];egg9k=n+4500;const f=$('fan'),l=$('fanLbl');
+  tile.classList.add('o9k');l.textContent="IT'S OVER";let v=+f.textContent||0;
+  const t=setInterval(()=>{v+=Math.ceil((9001-v)/6)+37;if(v>=9001){v=9001;clearInterval(t);f.textContent='>9000';l.textContent="OVER 9000!"}else f.textContent=v},45);
+  setTimeout(()=>{clearInterval(t);tile.classList.remove('o9k');egg9k=0;if(S)render()},4500)})}
+
+
+
+// 3) Datums-Überraschungen
+{const d=new Date(),m=d.getMonth()+1,day=d.getDate();
+ if((m==12&&day>=24&&day<=26)||EGG=='xmas'){$('xhat').removeAttribute('hidden');  // SVG: Attribut direkt entfernen
+
+   if(!RM){const c=document.createElement('div');c.className='flakes';let h='';
+     for(let i=0;i<28;i++){const sz=2+Math.random()*4;h+=`<i style="left:${Math.random()*100}%;width:${sz}px;height:${sz}px;--dx:${(Math.random()*60-30).toFixed(0)}px;animation-duration:${(7+Math.random()*8).toFixed(1)}s;animation-delay:-${(Math.random()*12).toFixed(1)}s;opacity:${(.4+Math.random()*.5).toFixed(2)}"></i>`}
+     c.innerHTML=h;document.body.appendChild(c)}}
+ if(((m==12&&day==31)||(m==1&&day==1)||EGG=='newyear')&&!RM){
+   const cv=document.createElement('canvas');cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9998';
+   document.body.appendChild(cv);const g=cv.getContext('2d'),dpr=devicePixelRatio||1;cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;g.scale(dpr,dpr);
+   const P=[],cols=['#ff7a00','#ffd23a','#3093e6','#ff3b30','#33d17a','#ffffff'];
+   const boom=(x,y)=>{const c=cols[Math.floor(Math.random()*cols.length)];for(let i=0;i<46;i++){const a=Math.random()*Math.PI*2,v=1.5+Math.random()*3.2;P.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:60+Math.random()*30,c})}};
+   for(let i=0;i<6;i++)setTimeout(()=>boom(innerWidth*(.15+Math.random()*.7),innerHeight*(.12+Math.random()*.35)),i*550);
+   const t0=Date.now();(function step(){g.clearRect(0,0,innerWidth,innerHeight);
+     for(let i=P.length-1;i>=0;i--){const p=P[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.vx*=.985;p.l--;if(p.l<=0){P.splice(i,1);continue}
+       g.globalAlpha=Math.min(1,p.l/40);g.fillStyle=p.c;g.beginPath();g.arc(p.x,p.y,1.8,0,7);g.fill()}
+     if(Date.now()-t0<5200||P.length)requestAnimationFrame(step);else cv.remove()})()}}
+</script>
+</body>
+</html>
