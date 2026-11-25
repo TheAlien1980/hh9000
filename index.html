@@ -1013,7 +1013,9 @@ const nf=(v,d)=>v==null?'–':Number(v).toFixed(d).replace('.',',');
 function fmtH(h){if(!h)return'0 h';const m=Math.round(h*60);return m<60?m+' min':Math.floor(m/60)+':'+String(m%60).padStart(2,'0')+' h'}
 function niceMax(v){if(v<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(v)));const f=v/e;return(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*e}
 function ticks(lo,hi,n){const step=niceMax((hi-lo)/n);const a=Math.floor(lo/step)*step,r=[];for(let v=a;v<=hi+step*1e-6;v+=step)r.push(+v.toFixed(6));return r}
-function tipAt(box,tip,x,html){tip.innerHTML=html;tip.classList.add('on');const w=box.clientWidth,tw=tip.offsetWidth;tip.style.left=Math.max(0,Math.min(w-tw,x-tw/2))+'px'}
+// Wertefenster seitlich neben die Position (rechts, sonst links), damit Linie und Punkte sichtbar bleiben
+function tipAt(box,tip,x,html){tip.innerHTML=html;tip.classList.add('on');const w=box.clientWidth,tw=tip.offsetWidth,gap=14;
+  let l=x+gap;if(l+tw>w)l=x-gap-tw;if(l<0)l=Math.max(0,Math.min(w-tw,x+gap));tip.style.left=l+'px'}
 /* Balkendiagramm: eine Reihe, Balken mit 2px Abstand und gerundeter Oberkante */
 function barChart(box,items,o){
   const W=Math.max(280,box.clientWidth||320),H=150,L=34,R=4,T=10,B=22,iw=W-L-R,ih=H-T-B;
