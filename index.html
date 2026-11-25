@@ -203,6 +203,9 @@ pre{background:var(--pre-bg);border:1px solid var(--line);border-radius:12px;pad
 .sbtn.small{width:38px;height:38px;font-size:20px}
 .wxr{display:block;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-top:6px;cursor:pointer}
 .wxr small{color:var(--mut)}
+.fbox{background:var(--banner-bg);border:1px solid var(--banner-line);color:var(--banner-fg);border-radius:14px;padding:12px 14px;margin-top:12px}
+.fbox b{display:block}.fbox span{display:block;font-size:13px;margin-top:3px;line-height:1.45}
+.fbox #faultUnlock{background:var(--bad);color:#fff;border:0}
 .mdue{display:flex;align-items:center;gap:12px;background:var(--wbox-bg);border:1px solid var(--wbox-line);color:var(--wbox-fg);border-radius:14px;padding:12px 14px;margin-top:12px}
 .mdue div{flex:1;min-width:0}.mdue b{display:block}.mdue span{font-size:13px;opacity:.9}
 .mdue .btn{flex:none;background:#ffc857;color:#000}
@@ -278,6 +281,10 @@ themeApply();
 
 <!-- ============ STEUERUNG ============ -->
 <section class="tab act" id="tab-ctl">
+  <div class="fbox" id="faultBox" hidden role="alert">
+    <b id="faultTitle"></b><span id="faultTxt"></span>
+    <div class="row" style="margin:10px 0 0"><button class="btn small" id="faultUnlock" hidden>Sperre aufheben</button><button class="btn small sec" id="faultAck">Ausblenden</button></div>
+  </div>
   <div class="mdue" id="maintDue" hidden>
     <div><b>Wartungslauf fällig</b><span id="maintDueTxt"></span></div>
     <button class="btn small" id="maintRunNow">Jetzt starten</button>
@@ -432,7 +439,9 @@ themeApply();
   <div class="card">
     <h2>Fehlerspeicher</h2>
     <div id="errList"><p class="hint">Noch nicht gelesen.</p></div>
-    <div class="row"><button class="btn sec" id="errRead">Auslesen</button><button class="btn danger" id="errClear">Löschen</button></div>
+    <div class="row"><button class="btn sec" id="errRead">Auslesen</button><button class="btn sec" id="errCopy">Kopieren</button><button class="btn danger" id="errClear">Löschen</button></div>
+    <button class="btn danger" id="errUnlock" disabled style="margin-top:10px" title="Nur aktiv, wenn die Heizung eine Sperre meldet">Sperre aufheben</button>
+    <p class="hint">„Sperre aufheben“ ist nur aktiv, wenn sich die Heizung nach wiederholten Störungen gesperrt hat. Es löscht den Fehlerspeicher – vorher die Ursache beheben (z.B. tanken), sonst sperrt sie sich wieder.</p>
   </div>
   <div class="card">
     <h2>Warm um … (Vorheizen bis zur Abfahrt)</h2>
@@ -643,7 +652,7 @@ async function api(path,body){
   const j=await r.json();
   if(!r.ok&&j&&j.error)throw new Error(j.error);return j;
 }
-const M={mode:'off',phase:'off',remaining:0,duration:60,target:22,online:true,state:4,stateText:'Aus',temp:7,voltage:12.6,flame:false,power:0,fan:0,timer:{active:false},timeValid:true,bus:{ok:0,err:0},opHours:412.5,workHours:430.1,starts:918,wifi:{rssi:-61,ip:'192.168.4.1'},mqtt:false,end:0,fuelRate:0,fw:'1.8.2 (Demo)',fanMin:3560,fanMax:4750,pressure:1013,ventLevel:50,cmd:0,outside:-3.4,outsideAge:12,place:'Babenhausen, Hessen, Deutschland',preheat:{minutes:25,temp:-3.4,source:'Außen (Wetter)'},maint:{mode:1,due:true,interval:30,runMin:15,at:'12:00',daysSince:34,last:'18.10.2026'},batt:{enabled:true,state:'ok',avg:12.62,warn:12.2,off:11.8,type:'AGM',startBlocked:false}};
+const M={mode:'off',phase:'off',remaining:0,duration:60,target:22,online:true,state:4,stateText:'Aus',temp:7,voltage:12.6,flame:false,power:0,fan:0,timer:{active:false},timeValid:true,bus:{ok:0,err:0},opHours:412.5,workHours:430.1,starts:918,wifi:{rssi:-61,ip:'192.168.4.1'},mqtt:false,end:0,fuelRate:0,fw:'1.8.2 (Demo)',fanMin:3560,fanMax:4750,pressure:1013,fault:(/[?&]fault/.test(location.search)?{code:'0x02',text:'Kein Start',fuel:true,at:'17:54'}:undefined),locked:/[?&]fault=lock/.test(location.search),ventLevel:50,cmd:0,outside:-3.4,outsideAge:12,place:'Babenhausen, Hessen, Deutschland',preheat:{minutes:25,temp:-3.4,source:'Außen (Wetter)'},maint:{mode:1,due:true,interval:30,runMin:15,at:'12:00',daysSince:34,last:'18.10.2026'},batt:{enabled:true,state:'ok',avg:12.62,warn:12.2,off:11.8,type:'AGM',startBlocked:false}};
 let MS=[{enabled:true,days:31,hour:7,minute:30,mode:'heat',kind:'depart',duration:60,target:21},{enabled:false,days:96,hour:9,minute:0,mode:'vent',duration:30,target:20}];
 function mock(p,b){
   const now=Date.now();
@@ -685,6 +694,8 @@ function mock(p,b){
     const from=b.from||0;return{on:!!M.sniff,oldest:0,frames:M.sniff?M.sniff.frames:0,bad:0,recs:(M.snR||[]).slice(from,from+120),next:Math.min((M.snR||[]).length,from+120)}}
   if(p=='/api/system')return b&&b.rollback?{ok:true}:{fw:'2.2.0 (Demo)',reset:'Einschalten',confirmed:true,rollback:true,prev:'2.1.0 (Nov 24 2026 10:12:44)'};
   if(p=='/api/log'){M.logN=(M.logN||3)+1;const l=[];for(let i=M.logN;i>0;i--)l.push('23.11. 18:'+pad(i%60)+':00  Demo-Eintrag '+i);return{log:l.slice(0,150),seq:M.logN}}
+  if(p=='/api/unlock'){M.locked=false;M.fault=undefined;return{ok:true,msg:'Sperre aufgehoben – die Heizung kann wieder gestartet werden'}}
+  if(p=='/api/fault/ack'){M.fault=undefined;return{ok:true}}
   if(p=='/api/errors')return{ok:true,errors:[{code:'0x02',text:'Kein Start',count:1,detail:{flags:0,count:1,state:0x2e,stateText:'Glühen',temp:-6,voltage:11.94,hours:697,minutes:12}},{code:'0x88',text:'Dosierpumpe Unterbrechung',count:2,raw:'02 88 01'}]};
   return{ok:true,tx:'F4 03 50 05 A2',rx:'4F 0B D0 05 39 31 1C 00 00 00 05 DC 02'};
 }
@@ -745,6 +756,12 @@ function render(){
   const remain=S.remaining>0?Math.max(0,S.remaining-age):S.remaining;
   $('fwVer').textContent=S.fw||'–';
   if(S.fw){const v=$('ver');const ver=S.fwVersion||S.fw.replace(/\s*\([^)]*\)\s*$/,'');v.textContent='v'+ver;v.title='Firmware '+ver+(S.fwBuild?' · erstellt '+S.fwBuild:'');v.hidden=false}
+  {const f=S.fault,lk=!!S.locked;$('faultBox').hidden=!(f||lk);
+   if(f||lk){$('faultTitle').textContent=lk&&!f?'Heizung gesperrt':(f.text+(f.code?' ('+f.code+')':'')+(f.at?' · '+f.at:''));
+     $('faultTxt').textContent=(f&&f.fuel?'Häufigste Ursache: Dieselstand zu niedrig – unter ca. ¼ Tank bekommt die Standheizung keinen Kraftstoff mehr. Bitte tanken und dann erneut starten; eventuell sind zwei Versuche nötig, bis die Luft aus der Leitung ist. ':'')
+       +(lk?'Die Heizung hat sich nach wiederholten Störungen gesperrt und startet erst wieder, wenn die Sperre aufgehoben ist. Vorher die Ursache beheben (z.B. tanken).':f&&!f.fuel?'Details unter Einstellungen › Fehlerspeicher.':'Nach mehreren Fehlstarts in Folge sperrt sich die Heizung.');
+     $('faultUnlock').hidden=!lk;$('faultAck').hidden=!f}}
+  $('errUnlock').disabled=!S.locked;
   {const mt=S.maint||{};$('maintDue').hidden=!(mt.due&&mode=='off');
    $('maintDueTxt').textContent=(mt.daysSince!=null?'Die Heizung ist seit '+mt.daysSince+' Tagen nicht gelaufen. ':'')+(mt.mode==2?'Automatischer Start täglich um '+mt.at+'.':mt.runMin+' min Heizen hält Pumpe und Leitungen frei.');
    $('mLast').textContent=mt.last?mt.last+' (vor '+mt.daysSince+' Tagen)':'noch nicht erfasst'}
@@ -1111,7 +1128,16 @@ $('errRead').onclick=async()=>{$('errList').innerHTML='<p class="hint">Lese …<
   if(!r.ok){$('errList').innerHTML=`<p class="hint">Fehler: ${r.error||'keine Antwort'}</p>`;return}
   const det=e=>{const d=e.detail;if(d)return `<div class="errd">Zuletzt bei Betriebsstunde ${d.hours} h ${d.minutes} min · ${d.stateText||'Zustand 0x'+d.state.toString(16)} · ${d.temp} °C · ${String(d.voltage.toFixed(1)).replace('.',',')} V</div>`;
     return e.raw?`<div class="errd">Details (roh): <code>${e.raw}</code></div>`:''};
+  ERRS=r.errors;
   $('errList').innerHTML=r.errors.length?r.errors.map(e=>`<div class="err"><span><code>${e.code}</code> ${e.text}</span><span>${e.count}×</span></div>${det(e)}`).join(''):'<p class="hint">Keine Fehler gespeichert ✓</p>'};
+let ERRS=null;
+$('errCopy').onclick=async()=>{if(!ERRS){toast('Erst „Auslesen“');return}
+  const t=ERRS.length?ERRS.map(e=>`${e.code} ${e.text} – ${e.count}×`+(e.detail?`\n  zuletzt bei Betriebsstunde ${e.detail.hours} h ${e.detail.minutes} min · ${e.detail.stateText||'Zustand 0x'+e.detail.state.toString(16)} · ${e.detail.temp} °C · ${String(e.detail.voltage.toFixed(1)).replace('.',',')} V`:e.raw?`\n  Details (roh): ${e.raw}`:'')).join('\n'):'Keine Fehler gespeichert';
+  try{await navigator.clipboard.writeText(t)}catch(x){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast('Kopiert')};
+async function unlockHeater(){if(!confirm('Sperre aufheben?\n\nDabei wird der Fehlerspeicher gelöscht. Bitte vorher die Ursache beheben (z.B. tanken) – sonst sperrt sich die Heizung beim nächsten Fehlstart wieder.'))return;
+  try{const r=await api('/api/unlock',{});toast(r.msg||'Sperre aufgehoben');ERRS=null;$('errList').innerHTML='<p class="hint">Noch nicht gelesen.</p>';setTimeout(refresh,300)}catch(e){toast('Fehler: '+e.message)}}
+$('errUnlock').onclick=unlockHeater;$('faultUnlock').onclick=unlockHeater;
+$('faultAck').onclick=async()=>{try{await api('/api/fault/ack',{});$('faultBox').hidden=true}catch(e){toast('Fehler: '+e.message)}};
 $('errClear').onclick=async()=>{if(!confirm('Fehlerspeicher wirklich löschen?'))return;const r=await api('/api/errors/clear',{});toast(r.ok?'Fehlerspeicher gelöscht':'Fehler: '+(r.error||''))};
 /* ---------- Erweiterte Optionen ---------- */
 function advShow(o){$('adv').hidden=!o;$('advBtn').textContent='Erweiterte Optionen '+(o?'▴':'▾');$('advBtn').setAttribute('aria-expanded',o);try{localStorage.setItem('sh_adv',o?1:0)}catch(e){}}
