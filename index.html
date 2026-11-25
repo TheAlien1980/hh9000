@@ -132,6 +132,8 @@ label.f{display:block;font-size:12px;color:var(--mut);margin:12px 0 5px}
 @media (max-width:400px){#tKind button{font-size:13.5px}}
 .snext{background:var(--card2);border-radius:12px;padding:10px 12px;margin:0 0 12px;font-size:14px;line-height:1.4}.snext b{font-weight:600}
 .nx{color:var(--mut);font-size:12px;margin-top:2px}
+.sgrp{margin:28px 4px 10px;font-size:19px;font-weight:700;letter-spacing:.1px;color:var(--txt)}
+.sgrp:first-of-type{margin-top:8px}
 .tsel{display:flex;align-items:center;gap:6px}.tsel select{flex:1;text-align:center;text-align-last:center}.tsel b{font-size:20px;color:var(--mut)}
 input[type=text],input[type=password],input[type=number],input[type=time],select{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px;outline:none;min-height:46px}
 input:focus,select:focus{border-color:var(--focus)}
@@ -427,11 +429,7 @@ themeApply();
 
 <!-- ============ EINSTELLUNGEN ============ -->
 <section class="tab" id="tab-set">
-  <div class="card">
-    <h2>Darstellung</h2>
-    <div class="seg" id="themeSeg"><button data-k="dark">Dunkel</button><button data-k="light">Hell</button><button data-k="auto">Automatisch</button></div>
-    <p class="hint">Gilt nur für dieses Gerät. „Automatisch“ folgt der Einstellung von Handy bzw. Computer.</p>
-  </div>
+  <h3 class="sgrp">Zustand &amp; Diagnose</h3>
   <div class="card">
     <h2>Heizgerät</h2>
     <div class="kv" id="devInfo"></div>
@@ -443,6 +441,92 @@ themeApply();
     <button class="btn danger" id="errUnlock" disabled style="margin-top:10px" title="Nur aktiv, wenn die Heizung eine Sperre meldet">Sperre aufheben</button>
     <p class="hint">„Sperre aufheben“ ist nur aktiv, wenn sich die Heizung nach wiederholten Störungen gesperrt hat. Es löscht den Fehlerspeicher – vorher die Ursache beheben (z.B. tanken), sonst sperrt sie sich wieder.</p>
   </div>
+  <div class="card">
+    <h2>Protokoll <button class="btn small sec" id="logRefresh">Aktualisieren</button></h2>
+    <pre id="log">–</pre>
+    <div class="row"><button class="btn small sec" id="logCls" title="Anzeige leeren – das Protokoll im ESP bleibt erhalten">Leeren</button><button class="btn small sec" id="logCopy">Kopieren</button><button class="btn small sec" id="logSave">Herunterladen</button></div>
+  </div>
+  <h3 class="sgrp">System</h3>
+  <div class="card">
+    <h2>Darstellung</h2>
+    <div class="seg" id="themeSeg"><button data-k="dark">Dunkel</button><button data-k="light">Hell</button><button data-k="auto">Automatisch</button></div>
+    <p class="hint">Gilt nur für dieses Gerät. „Automatisch“ folgt der Einstellung von Handy bzw. Computer.</p>
+  </div>
+  <div class="card" id="fwCard">
+    <h2>Firmware-Update</h2>
+    <div class="kv"><span>Installiert</span><b id="fwVer">–</b><span>Letzter Neustart</span><b id="sysReset">–</b><span>Vorherige Version</span><b id="sysPrev">–</b></div>
+    <p class="hint" id="sysHint"></p>
+    <button class="btn sec" id="sysBack" hidden style="margin-bottom:10px">Zur vorherigen Version zurück</button>
+    <div id="fwLocal">
+      <label class="f" for="fwFile">Neue Firmware (.bin)</label>
+      <input type="file" id="fwFile" accept=".bin,application/octet-stream" style="width:100%;color:var(--mut)">
+      <p class="hint">In der Arduino IDE: <b>Sketch → Kompilierte Binärdatei exportieren</b>. Danach im Sketch-Ordner unter <code>build/…/</code> die Datei <b>HH9000.ino.bin</b> wählen, nicht „merged“, „bootloader“ oder „partitions“. Heizung vorher ausschalten.</p>
+      <div class="prog" id="fwProg" hidden><i id="fwBar"></i></div>
+      <p class="hint" id="fwMsg" aria-live="polite"></p>
+      <button class="btn" id="fwGo" style="margin-top:6px">Firmware hochladen</button>
+    </div>
+    <p class="hint" id="fwRemote" hidden>Firmware-Updates gehen nur im selben WLAN wie der ESP (direkt über seine IP-Adresse), nicht über den Fernzugriff.</p>
+  </div>
+  <button class="btn danger" id="restart" style="margin:6px 0 20px">HH9000 neu starten</button>
+  <button class="btn sec" id="advBtn" aria-expanded="false" aria-controls="adv" style="margin:0 0 12px">Erweiterte Optionen ▾</button>
+  <div id="adv" hidden>
+  <div class="card">
+    <h2>W-Bus Diagnose</h2>
+    <p class="hint" style="margin-top:0">Kommando + Daten in Hex, Header/Länge/Prüfsumme werden ergänzt. Bsp.: <code>50 05</code> (Sensoren), <code>51 0A</code> (Gerätename)</p>
+    <div class="row"><input type="text" id="raw" value="50 05" autocomplete="off"><button class="btn small" id="rawSend" style="flex:none">Senden</button></div>
+    <pre id="rawOut" style="display:none"></pre>
+  </div>
+  <div class="card">
+    <h2>Messwerte scannen</h2>
+    <p class="hint" style="margin-top:0">Fragt alle Messwert-Nummern der Heizung ab (<code>50 xx</code> und <code>50 30 xx</code>, dauert ca. 30 s). Zweimal scannen – z.B. kurz nach dem Start und nach ein paar Minuten Heizen – dann werden geänderte Werte markiert (▲ gestiegen, ▼ gefallen).</p>
+    <button class="btn" id="scBtn">Scan starten</button>
+    <p class="hint" id="scInfo"></p>
+    <pre id="scOut" hidden style="white-space:pre;overflow-x:auto;max-height:420px"></pre>
+    <div class="row"><button class="btn small sec" id="scCopy">Ergebnis kopieren</button><button class="btn small sec" id="scClear">Zurücksetzen</button></div>
+  </div>
+  <div class="card">
+    <h2>W-Bus mithören</h2>
+    <p class="hint" style="margin-top:0">Zum Belauschen des Original-Bedienteils: Bedienteil normal an die Heizung anschließen, den ESP mit dem LIN-Modul parallel an dieselbe W-Bus-Leitung (dazu Masse und 12 V). Im Mithörmodus sendet der ESP nichts und steuert die Heizung nicht. Endet automatisch nach 2 h oder beim Neustart.</p>
+    <button class="btn" id="snBtn">Mithören starten</button>
+    <div class="row" style="margin-top:10px"><input type="text" id="snMarkTxt" placeholder="Markierung, z.B. Rad auf Stufe 3" maxlength="45" autocomplete="off"><button class="btn small sec" id="snMark" style="flex:none">Markieren</button></div>
+    <div class="row" style="margin:10px 0 0;align-items:center"><div><b>Nur neue Telegramme</b><p class="hint" style="margin-top:2px">Wiederholungen ausblenden – so fällt ein neuer Befehl sofort auf.</p></div>
+    <label class="toggle"><input type="checkbox" id="snNew" checked><span></span></label></div>
+    <p class="hint" id="snInfo"></p>
+    <pre id="snOut" hidden style="white-space:pre;overflow-x:auto;max-height:420px"></pre>
+    <div class="row"><button class="btn small sec" id="snCopy">Alles kopieren</button><button class="btn small sec" id="snSave">Herunterladen</button></div>
+  </div>
+  </div>
+  <h3 class="sgrp">Verbindung &amp; Zugang</h3>
+  <div class="card">
+    <h2>WLAN</h2>
+    <label class="f">WLAN 1 – Name (SSID)</label><input type="text" id="sSsid" autocomplete="off">
+    <label class="f">WLAN 1 – Passwort</label><input type="password" id="sPass" placeholder="unverändert">
+    <label class="f">WLAN 2 – Name (z.B. LTE-Router im Auto)</label><input type="text" id="sSsid2" autocomplete="off" placeholder="optional">
+    <label class="f">WLAN 2 – Passwort</label><input type="password" id="sPass2" placeholder="unverändert">
+    <p class="hint">Der ESP verbindet sich automatisch mit dem stärksten der beiden Netze.</p>
+    <label class="f">Hostname</label><input type="text" id="sHost">
+  </div>
+  <div class="card">
+    <h2>Fernzugriff &amp; Home Assistant (MQTT)</h2>
+    <div class="row" style="margin:0"><div>MQTT aktivieren</div><label class="toggle"><input type="checkbox" id="mEn"><span></span></label></div>
+    <div class="row" style="margin:6px 0 0"><div>Verschlüsselt (TLS)<p class="hint" style="margin-top:2px">Für Cloud-Broker immer an (Port 8883).</p></div><label class="toggle"><input type="checkbox" id="mTls"><span></span></label></div>
+    <label class="f">Broker</label><input type="text" id="mHost" placeholder="xxxxxxxx.s1.eu.hivemq.cloud" autocapitalize="off">
+    <div class="row"><div><label class="f">Port</label><input type="number" id="mPort"></div><div><label class="f">Basis-Topic</label><input type="text" id="mBase"></div></div>
+    <div class="row"><div><label class="f">Benutzer</label><input type="text" id="mUser" autocomplete="off"></div><div><label class="f">Passwort</label><input type="password" id="mPass" placeholder="unverändert"></div></div>
+    <p class="hint">Über den Broker ist die Weboberfläche auch unterwegs nutzbar. Home Assistant findet das Gerät automatisch (MQTT-Discovery).</p>
+  </div>
+  <div class="card" id="remoteCard" style="display:none">
+    <h2>Fernzugriff (dieses Handy)</h2>
+    <div class="kv" id="remoteInfo"></div>
+    <button class="btn sec" id="rLogout" style="margin-top:12px">Zugangsdaten auf diesem Gerät löschen</button>
+  </div>
+  <div class="card">
+    <h2>Zugangsschutz</h2>
+    <div class="row"><div><label class="f">Benutzer</label><input type="text" id="wUser"></div><div><label class="f">Passwort</label><input type="password" id="wPass" placeholder="leer = kein Schutz"></div></div>
+    <button class="btn sec small" id="wClear">Passwortschutz entfernen</button>
+  </div>
+  <button class="btn" id="saveSet">Einstellungen speichern</button>
+  <h3 class="sgrp">Heizbetrieb</h3>
   <div class="card">
     <h2>Warm um … (Vorheizen bis zur Abfahrt)</h2>
     <p class="hint" style="margin-top:0">Für „Warm um“ berechnet der ESP den Start aus der Temperatur: je kälter, desto früher. Kurz vorher (ab „höchstens“ + 15 min vor der Abfahrt) ruft er die Außentemperatur alle 5 min frisch ab und rechnet den Start jedes Mal neu – der Start hängt also von der echten Temperatur kurz vor der Abfahrt ab, nicht von der beim Einstellen.</p>
@@ -478,84 +562,6 @@ themeApply();
     <div class="row"><div><label class="f">Warnung unter (V)</label><input type="number" id="bWarn" step="0.1" min="9" max="14.5"></div><div><label class="f">Abschalten unter (V)</label><input type="number" id="bOff" step="0.1" min="9" max="14.5"></div></div>
     <p class="hint" id="bInfo"></p>
   </div>
-  <div class="card">
-    <h2>WLAN</h2>
-    <label class="f">WLAN 1 – Name (SSID)</label><input type="text" id="sSsid" autocomplete="off">
-    <label class="f">WLAN 1 – Passwort</label><input type="password" id="sPass" placeholder="unverändert">
-    <label class="f">WLAN 2 – Name (z.B. LTE-Router im Auto)</label><input type="text" id="sSsid2" autocomplete="off" placeholder="optional">
-    <label class="f">WLAN 2 – Passwort</label><input type="password" id="sPass2" placeholder="unverändert">
-    <p class="hint">Der ESP verbindet sich automatisch mit dem stärksten der beiden Netze.</p>
-    <label class="f">Hostname</label><input type="text" id="sHost">
-  </div>
-  <div class="card">
-    <h2>Fernzugriff &amp; Home Assistant (MQTT)</h2>
-    <div class="row" style="margin:0"><div>MQTT aktivieren</div><label class="toggle"><input type="checkbox" id="mEn"><span></span></label></div>
-    <div class="row" style="margin:6px 0 0"><div>Verschlüsselt (TLS)<p class="hint" style="margin-top:2px">Für Cloud-Broker immer an (Port 8883).</p></div><label class="toggle"><input type="checkbox" id="mTls"><span></span></label></div>
-    <label class="f">Broker</label><input type="text" id="mHost" placeholder="xxxxxxxx.s1.eu.hivemq.cloud" autocapitalize="off">
-    <div class="row"><div><label class="f">Port</label><input type="number" id="mPort"></div><div><label class="f">Basis-Topic</label><input type="text" id="mBase"></div></div>
-    <div class="row"><div><label class="f">Benutzer</label><input type="text" id="mUser" autocomplete="off"></div><div><label class="f">Passwort</label><input type="password" id="mPass" placeholder="unverändert"></div></div>
-    <p class="hint">Über den Broker ist die Weboberfläche auch unterwegs nutzbar. Home Assistant findet das Gerät automatisch (MQTT-Discovery).</p>
-  </div>
-  <div class="card" id="remoteCard" style="display:none">
-    <h2>Fernzugriff (dieses Handy)</h2>
-    <div class="kv" id="remoteInfo"></div>
-    <button class="btn sec" id="rLogout" style="margin-top:12px">Zugangsdaten auf diesem Gerät löschen</button>
-  </div>
-  <div class="card">
-    <h2>Zugangsschutz</h2>
-    <div class="row"><div><label class="f">Benutzer</label><input type="text" id="wUser"></div><div><label class="f">Passwort</label><input type="password" id="wPass" placeholder="leer = kein Schutz"></div></div>
-    <button class="btn sec small" id="wClear">Passwortschutz entfernen</button>
-  </div>
-  <button class="btn" id="saveSet">Einstellungen speichern</button>
-  <div class="card" id="fwCard">
-    <h2>Firmware-Update</h2>
-    <div class="kv"><span>Installiert</span><b id="fwVer">–</b><span>Letzter Neustart</span><b id="sysReset">–</b><span>Vorherige Version</span><b id="sysPrev">–</b></div>
-    <p class="hint" id="sysHint"></p>
-    <button class="btn sec" id="sysBack" hidden style="margin-bottom:10px">Zur vorherigen Version zurück</button>
-    <div id="fwLocal">
-      <label class="f" for="fwFile">Neue Firmware (.bin)</label>
-      <input type="file" id="fwFile" accept=".bin,application/octet-stream" style="width:100%;color:var(--mut)">
-      <p class="hint">In der Arduino IDE: <b>Sketch → Kompilierte Binärdatei exportieren</b>. Danach im Sketch-Ordner unter <code>build/…/</code> die Datei <b>HH9000.ino.bin</b> wählen, nicht „merged“, „bootloader“ oder „partitions“. Heizung vorher ausschalten.</p>
-      <div class="prog" id="fwProg" hidden><i id="fwBar"></i></div>
-      <p class="hint" id="fwMsg" aria-live="polite"></p>
-      <button class="btn" id="fwGo" style="margin-top:6px">Firmware hochladen</button>
-    </div>
-    <p class="hint" id="fwRemote" hidden>Firmware-Updates gehen nur im selben WLAN wie der ESP (direkt über seine IP-Adresse), nicht über den Fernzugriff.</p>
-  </div>
-  <div class="card">
-    <h2>Protokoll <button class="btn small sec" id="logRefresh">Aktualisieren</button></h2>
-    <pre id="log">–</pre>
-    <div class="row"><button class="btn small sec" id="logCls" title="Anzeige leeren – das Protokoll im ESP bleibt erhalten">Leeren</button><button class="btn small sec" id="logCopy">Kopieren</button><button class="btn small sec" id="logSave">Herunterladen</button></div>
-  </div>
-  <button class="btn sec" id="advBtn" aria-expanded="false" aria-controls="adv" style="margin:0 0 12px">Erweiterte Optionen ▾</button>
-  <div id="adv" hidden>
-  <div class="card">
-    <h2>W-Bus Diagnose</h2>
-    <p class="hint" style="margin-top:0">Kommando + Daten in Hex, Header/Länge/Prüfsumme werden ergänzt. Bsp.: <code>50 05</code> (Sensoren), <code>51 0A</code> (Gerätename)</p>
-    <div class="row"><input type="text" id="raw" value="50 05" autocomplete="off"><button class="btn small" id="rawSend" style="flex:none">Senden</button></div>
-    <pre id="rawOut" style="display:none"></pre>
-  </div>
-  <div class="card">
-    <h2>Messwerte scannen</h2>
-    <p class="hint" style="margin-top:0">Fragt alle Messwert-Nummern der Heizung ab (<code>50 xx</code> und <code>50 30 xx</code>, dauert ca. 30 s). Zweimal scannen – z.B. kurz nach dem Start und nach ein paar Minuten Heizen – dann werden geänderte Werte markiert (▲ gestiegen, ▼ gefallen).</p>
-    <button class="btn" id="scBtn">Scan starten</button>
-    <p class="hint" id="scInfo"></p>
-    <pre id="scOut" hidden style="white-space:pre;overflow-x:auto;max-height:420px"></pre>
-    <div class="row"><button class="btn small sec" id="scCopy">Ergebnis kopieren</button><button class="btn small sec" id="scClear">Zurücksetzen</button></div>
-  </div>
-  <div class="card">
-    <h2>W-Bus mithören</h2>
-    <p class="hint" style="margin-top:0">Zum Belauschen des Original-Bedienteils: Bedienteil normal an die Heizung anschließen, den ESP mit dem LIN-Modul parallel an dieselbe W-Bus-Leitung (dazu Masse und 12 V). Im Mithörmodus sendet der ESP nichts und steuert die Heizung nicht. Endet automatisch nach 2 h oder beim Neustart.</p>
-    <button class="btn" id="snBtn">Mithören starten</button>
-    <div class="row" style="margin-top:10px"><input type="text" id="snMarkTxt" placeholder="Markierung, z.B. Rad auf Stufe 3" maxlength="45" autocomplete="off"><button class="btn small sec" id="snMark" style="flex:none">Markieren</button></div>
-    <div class="row" style="margin:10px 0 0;align-items:center"><div><b>Nur neue Telegramme</b><p class="hint" style="margin-top:2px">Wiederholungen ausblenden – so fällt ein neuer Befehl sofort auf.</p></div>
-    <label class="toggle"><input type="checkbox" id="snNew" checked><span></span></label></div>
-    <p class="hint" id="snInfo"></p>
-    <pre id="snOut" hidden style="white-space:pre;overflow-x:auto;max-height:420px"></pre>
-    <div class="row"><button class="btn small sec" id="snCopy">Alles kopieren</button><button class="btn small sec" id="snSave">Herunterladen</button></div>
-  </div>
-  </div>
-  <button class="btn danger" id="restart" style="margin:6px 0 20px">HH9000 neu starten</button>
 </section>
 </main>
 
