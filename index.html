@@ -355,17 +355,15 @@ themeApply();
     <h2>Vorwahl-Timer</h2>
     <div id="timerActive" style="display:none"></div>
     <div id="timerForm">
-      <div class="seg" id="tKind"><button data-k="dep" class="act">Warm um …</button><button data-k="in">Start in …</button><button data-k="at">Start um …</button></div>
-      <div id="tIn" style="display:none">
+      <div class="seg" id="tKind"><button data-k="in" class="act">Start in …</button><button data-k="at">Start um …</button><button data-k="dep">Warm um …</button></div>
+      <div id="tIn">
         <div class="chips" style="margin-top:12px" id="inChips"></div>
         <div class="row"><div><label class="f">Stunden</label><input type="number" id="inH" min="0" max="167" value="1"></div><div><label class="f">Minuten</label><input type="number" id="inM" min="0" max="59" step="5" value="0"></div></div>
       </div>
-      <div id="tAt"><label class="f" id="tAtLbl">Abfahrtszeit (nächstes Vorkommen)</label><input type="time" id="atTime" value="07:30"></div>
-      <div id="tOpts" style="display:none">
+      <div id="tAt" style="display:none"><label class="f" id="tAtLbl">Uhrzeit (nächstes Vorkommen)</label><input type="time" id="atTime" value="07:30"></div>
+      <div id="tOpts">
       <label class="f">Betriebsart</label>
       <div class="seg" id="tMode"><button data-m="heat" class="act h">Heizen</button><button data-m="vent">Lüften</button></div>
-      <label class="f">Laufzeit</label>
-      <select id="tDur"></select>
       </div>
       <p class="hint" id="tPreview"></p>
       <button class="btn" id="tSet" style="margin-top:12px">Timer setzen</button>
@@ -539,7 +537,7 @@ themeApply();
     <label class="f" style="margin-top:14px">Vorlaufzeit je Temperatur</label>
     <div class="dcurve"><svg id="dCurve" viewBox="0 0 340 210" role="img" aria-label="Vorheizkurve: Vorlaufzeit in Minuten je Temperatur"></svg></div>
     <div class="dsel"><span id="dSelTxt">Punkt antippen oder ziehen</span><button class="sbtn small" id="dSelM" aria-label="Weniger Minuten">−</button><button class="sbtn small" id="dSelP" aria-label="Mehr Minuten">+</button></div>
-    <div class="row"><div><label class="f" for="dMax">höchstens (min)</label><input type="number" id="dMax" min="5" max="180"></div><div><label class="f" for="dAfter">Nachlauf nach Abfahrt (min)</label><input type="number" id="dAfter" min="0" max="60"></div></div>
+    <div class="row"><div><label class="f" for="dMax">höchstens (min)</label><input type="number" id="dMax" min="5" max="180"></div><div><label class="f" for="dAfter">Nachlauf nach Abfahrt, nur Wochenplan (min)</label><input type="number" id="dAfter" min="0" max="60"></div></div>
     <button class="btn small sec" id="dReset" style="margin-top:10px">Standardkurve</button>
   </div>
   <div class="card">
@@ -806,7 +804,7 @@ function showTgt(){$('tgt').textContent=tgt;$('tgtSmall').textContent=tgt;$('tRa
 function renderDur(){
   $('durChips').innerHTML=DUR.map(([m,l])=>`<div class="chip ${m==selDur?'act':''}" data-d="${m}">${l}</div>`).join('');
   $('durChips').querySelectorAll('.chip').forEach(c=>c.onclick=async()=>{
-    selDur=+c.dataset.d;renderDur();
+    selDur=+c.dataset.d;renderDur();tPreview();
     try{await api('/api/duration',{duration:selDur});toast(S&&S.mode!='off'?'Laufzeit: '+durLabel(selDur)+' ab jetzt':'Laufzeit: '+durLabel(selDur))}catch(e){toast('Fehler: '+e.message)}
     refresh()});
 }
@@ -834,11 +832,11 @@ $('vMinus').onclick=()=>changeVlv(vlv-10);$('vPlus').onclick=()=>changeVlv(vlv+1
 $('tMinus').onclick=()=>changeTgt(tgt-1);$('tPlus').onclick=()=>changeTgt(tgt+1);$('tRange').oninput=e=>changeTgt(+e.target.value);
 
 /* ---------- Timer ---------- */
-let tKind='dep',tMode='heat';
+let tKind='in',tMode='heat';
 const IN=[[1,'1 h'],[2,'2 h'],[3,'3 h'],[4,'4 h'],[6,'6 h'],[8,'8 h'],[10,'10 h'],[12,'12 h']];
 $('inChips').innerHTML=IN.map(([h,l])=>`<div class="chip" data-h="${h}">${l}</div>`).join('');
 $('inChips').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{$('inH').value=c.dataset.h;$('inM').value=0;tPreview()});
-$('tDur').innerHTML=$('shDur').innerHTML=DUR.map(([m,l])=>`<option value="${m}">${l}</option>`).join('');$('tDur').value=60;
+$('shDur').innerHTML=DUR.map(([m,l])=>`<option value="${m}">${l}</option>`).join('');
 function seg(id,cb){$(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{$(id).querySelectorAll('button').forEach(x=>x.className='');
   b.className='act'+(b.dataset.m=='heat'?' h':b.dataset.m=='vent'?' v':'');cb(b.dataset.k||b.dataset.m)})}
 seg('tKind',k=>{tKind=k;$('tIn').style.display=k=='in'?'block':'none';$('tAt').style.display=k!='in'?'block':'none';
@@ -867,11 +865,13 @@ function preText(){const p=S&&S.preheat;if(!p)return'';return p.minutes?`ca. ${p
 function tPreview(){const m=tMinutes();if(m<1){$('tPreview').textContent='';return}
   const at=tKind=='in'?new Date(Date.now()+m*60000):tAtDate();const tom=at.getDate()!=new Date().getDate();
   if(tKind=='dep'){const p=S&&S.preheat;const st=p&&p.minutes?new Date(at-p.minutes*60000):null;
-    $('tPreview').textContent=`Warm ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr (in ${fmtSec(Math.round((at-Date.now())/1000))}), ${tgt} °C`+(st?` · Start ca. ${pad(st.getHours())}:${pad(st.getMinutes())} (${preText()})`:p?` · ${preText()}`:'')+'. Die Startzeit wird bis zuletzt an die aktuelle Temperatur angepasst.';return}
-  $('tPreview').textContent=`Start ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr (in ${fmtSec(m*60)})`}
-['inH','inM','atTime','tDur'].forEach(i=>$(i).oninput=tPreview);
+    let run='';if(st){const lauf=selDur?Math.max(selDur,p.minutes):0;const end=new Date(st.getTime()+lauf*60000);
+      run=selDur?` · heizt ca. ${pad(st.getHours())}:${pad(st.getMinutes())}–${pad(end.getHours())}:${pad(end.getMinutes())}`+(selDur<p.minutes?' (Laufzeit reicht nicht bis zur Abfahrt – läuft mindestens bis dahin)':` (Laufzeit ${durLabel(selDur)})`):` · Start ca. ${pad(st.getHours())}:${pad(st.getMinutes())}, läuft dauerhaft`}
+    $('tPreview').textContent=`Warm ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr (in ${fmtSec(Math.round((at-Date.now())/1000))}), ${tgt} °C`+(st?run+` · ${preText()}`:p?` · ${preText()}`:'')+'. Die Startzeit wird bis zuletzt an die aktuelle Temperatur angepasst. Laufzeit: Kachel „Laufzeit“ oben.';return}
+  $('tPreview').textContent=`${tMode=='vent'?'Lüften':'Heizen'} ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr (in ${fmtSec(m*60)}) · Laufzeit ${durLabel(selDur)} (Kachel „Laufzeit“ oben)`}
+['inH','inM','atTime'].forEach(i=>$(i).oninput=tPreview);
 $('tSet').onclick=async()=>{const m=tMinutes();if(m<1)return toast('Bitte Startzeit wählen');
-  try{await api('/api/timer',tKind=='dep'?{inMinutes:m,depart:true,mode:'heat',target:tgt}:{inMinutes:m,mode:tMode,duration:+$('tDur').value,target:tgt});toast('Timer gesetzt');refresh()}catch(e){toast('Fehler: '+e.message)}};
+  try{await api('/api/timer',tKind=='dep'?{inMinutes:m,depart:true,mode:'heat',duration:selDur,target:tgt}:{inMinutes:m,mode:tMode,duration:selDur,target:tgt});toast('Timer gesetzt');refresh()}catch(e){toast('Fehler: '+e.message)}};
 
 /* ---------- Wochenplan ---------- */
 async function loadSched(){try{const r=await api('/api/schedule');sched=r.entries||[];renderSched()}catch(e){}}
