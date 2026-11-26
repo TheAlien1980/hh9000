@@ -792,7 +792,7 @@ function render(){
     else tl=`<b>${t.at?'um '+t.at:'Start geplant'}</b><span>${t.in>=0?'in '+fmtSec(Math.max(0,t.in-age))+' · ':''}${t.mode=='vent'?'Lüften':'Heizen'} · ${durLabel(t.duration)}${t.mode=='heat'?' · '+t.target+' °C':''}</span>`;
     $('timerActive').innerHTML=`<div class="tactive"><div class="ic ${t.mode=='vent'?'v':''}">${t.mode=='vent'?FAN:FLAME}</div><div class="tx">${tl}</div><button class="btn small danger" id="tCancel">Löschen</button></div>`;
     $('tCancel').onclick=async()=>{await api('/api/timer',{cancel:true});toast('Timer gelöscht');refresh()};
-  }else{$('timerActive').style.display='none';$('timerForm').style.display='block';if(tKind=='dep')tPreview()}
+  }else{$('timerActive').style.display='none';$('timerForm').style.display='block';tPreview()}
   // Geräteinfo
   $('devInfo').innerHTML=[['W-Bus',S.online?'verbunden':'keine Antwort'],['Zustand',S.stateText+' (0x'+(S.state>=0?S.state.toString(16):'??')+')'],
     ['Glühstift',(S.glow??0)+' %'],['Dosierpumpe',(S.pump??0)+' Hz'],['Betriebsstunden',S.opHours!=null?S.opHours+' h':'–'],['Starts',S.starts??'–'],
@@ -863,12 +863,17 @@ $('shTime').addEventListener('change',()=>shNextUI());
 function tAtDate(){const [h,m]=$('atTime').value.split(':').map(Number);const n=new Date(),t=new Date();t.setHours(h,m,0,0);if(t<=n)t.setDate(t.getDate()+1);return t}
 function preText(){const p=S&&S.preheat;if(!p)return'';return p.minutes?`ca. ${p.minutes} min Vorheizen bei ${fmtT(p.temp)} (${p.source})`:`bei ${fmtT(p.temp)} kein Vorheizen nötig`}
 function tPreview(){const m=tMinutes();if(m<1){$('tPreview').textContent='';return}
-  const at=tKind=='in'?new Date(Date.now()+m*60000):tAtDate();const tom=at.getDate()!=new Date().getDate();
-  if(tKind=='dep'){const p=S&&S.preheat;const st=p&&p.minutes?new Date(at-p.minutes*60000):null;
-    let run='';if(st){const lauf=selDur?Math.max(selDur,p.minutes):0;const end=new Date(st.getTime()+lauf*60000);
-      run=selDur?` · heizt ca. ${pad(st.getHours())}:${pad(st.getMinutes())}–${pad(end.getHours())}:${pad(end.getMinutes())}`+(selDur<p.minutes?' (Laufzeit reicht nicht bis zur Abfahrt – läuft mindestens bis dahin)':` (Laufzeit ${durLabel(selDur)})`):` · Start ca. ${pad(st.getHours())}:${pad(st.getMinutes())}, läuft dauerhaft`}
-    $('tPreview').textContent=`Warm ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr (in ${fmtSec(Math.round((at-Date.now())/1000))}), ${tgt} °C`+(st?run+` · ${preText()}`:p?` · ${preText()}`:'')+'. Die Startzeit wird bis zuletzt an die aktuelle Temperatur angepasst. Laufzeit: Kachel „Laufzeit“ oben.';return}
-  $('tPreview').textContent=`${tMode=='vent'?'Lüften':'Heizen'} ${tom?'morgen ':''}um ${pad(at.getHours())}:${pad(at.getMinutes())} Uhr (in ${fmtSec(m*60)}) · Laufzeit ${durLabel(selDur)} (Kachel „Laufzeit“ oben)`}
+  const at=tKind=='in'?new Date(Date.now()+m*60000):tAtDate();
+  const day=d=>{const n=new Date(),t=new Date(n);t.setDate(n.getDate()+1);return d.toDateString()==n.toDateString()?'':d.toDateString()==t.toDateString()?'morgen ':WD[d.getDay()]+' '};
+  const hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
+  const lauf=selDur?`Laufzeit ${durLabel(selDur)}`:'Laufzeit dauerhaft';
+  if(tKind=='dep'){const p=S&&S.preheat;const st=p&&p.minutes?new Date(at-p.minutes*60000):null;const end=new Date(at.getTime()+selDur*60000);
+    const after=selDur?`danach noch ${durLabel(selDur)}`:'danach dauerhaft';
+    const run=st?` · heizt ca. ${hm(st)}–${selDur?hm(end):'…'} (${p.minutes} min Vorheizen bei ${fmtT(p.temp)}, ${after})`
+                :` · ${p?preText()+', ':''}${after}`+(selDur?` bis ${hm(end)}`:'');
+    $('tPreview').textContent=`Warm ${day(at)}um ${hm(at)} Uhr (in ${fmtSec(Math.round((at-Date.now())/1000))}), ${tgt} °C`+run+'. Die Startzeit wird bis zuletzt an die aktuelle Temperatur angepasst. Laufzeit: Kachel „Laufzeit“ oben.';return}
+  const end=new Date(at.getTime()+selDur*60000);
+  $('tPreview').textContent=`${tMode=='vent'?'Lüften':'Heizen'} ${day(at)}um ${hm(at)} Uhr (in ${fmtSec(Math.round((at-Date.now())/1000))})`+(tMode=='heat'?`, ${tgt} °C`:'')+` · ${tMode=='vent'?'lüftet':'heizt'} ${selDur?`bis ca. ${day(end)!=day(at)?day(end):''}${hm(end)} (${lauf})`:'dauerhaft'}. Laufzeit: Kachel „Laufzeit“ oben.`}
 ['inH','inM','atTime'].forEach(i=>$(i).oninput=tPreview);
 $('tSet').onclick=async()=>{const m=tMinutes();if(m<1)return toast('Bitte Startzeit wählen');
   try{await api('/api/timer',tKind=='dep'?{inMinutes:m,depart:true,mode:'heat',duration:selDur,target:tgt}:{inMinutes:m,mode:tMode,duration:selDur,target:tgt});toast('Timer gesetzt');refresh()}catch(e){toast('Fehler: '+e.message)}};
