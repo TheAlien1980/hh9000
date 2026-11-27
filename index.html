@@ -1135,14 +1135,17 @@ $('saveSet').onclick=async()=>{
   try{const r=await api('/api/settings',b);toast(r.restart?'Gespeichert – ESP startet neu …':'Gespeichert');$('sPass').value=$('sPass2').value=$('mPass').value=$('wPass').value='';if(r.restart&&REMOTE)toast('Gespeichert – ESP startet neu, Verbindung kommt in ca. 30 s zurück')}catch(e){toast('Fehler: '+e.message)}};
 $('wClear').onclick=async()=>{await api('/api/settings',{clearWebPass:true});toast('Passwortschutz entfernt');loadSettings()};
 // Protokoll: "Leeren" blendet nur bisherige Zeilen aus (wie cls), der ESP behält sie (max. 150 Zeilen)
-let LOG={log:[],seq:0},logClr=0;try{logClr=+localStorage.getItem('sh_logclr')||0}catch(e){}
+let LOG={log:[],seq:0},logClr=0,logClrLine='';try{logClr=+localStorage.getItem('sh_logclr')||0;logClrLine=localStorage.getItem('sh_logclrline')||''}catch(e){}
 function logVisible(){
   // Zeilennummer beginnt nach jedem Neustart (oder auf einem neuen Board) wieder bei 0: alte "Leeren"-Marke verwerfen
   if(LOG.seq&&logClr>LOG.seq){logClr=0;try{localStorage.removeItem('sh_logclr')}catch(e){}}
   const n=LOG.seq?Math.max(0,LOG.seq-logClr):LOG.log.length;return LOG.log.slice(0,n)}
 // Zeilen vor dem letzten Neustart (dauerhaft gespeichert) unter einer Trennlinie anhängen
-function logPrev(){return LOG.prev&&LOG.prev.length?['','──── vor dem letzten Neustart ────'].concat(LOG.prev):[]}
-function logShow(){const v=logVisible().concat(logPrev());$('log').textContent=v.join('\n')||(logClr?'(geleert – neue Einträge erscheinen hier)':'–')}
+// "Leeren" merkt sich die neueste Zeile: alles bis dahin bleibt ausgeblendet – auch die Zeilen vor einem Neustart
+function logPrev(){let p=LOG.prev||[];
+  if(logClrLine){if((LOG.log||[]).includes(logClrLine))p=[];else{const k=p.indexOf(logClrLine);if(k>=0)p=p.slice(0,k)}}
+  return p.length?['','──── vor dem letzten Neustart ────'].concat(p):[]}
+function logShow(){const v=logVisible().concat(logPrev());$('log').textContent=v.join('\n')||(logClr||logClrLine?'(geleert – neue Einträge erscheinen hier)':'–')}
 // Systeminfo: letzter Neustart, vorherige Firmware, Rückfall
 async function loadSys(){try{const r=await api('/api/system');
   $('sysReset').textContent=r.reset||'–';$('sysPrev').textContent=r.prev||(r.rollback?'vorhanden':'keine');
@@ -1151,7 +1154,7 @@ async function loadSys(){try{const r=await api('/api/system');
 $('sysBack').onclick=async()=>{if(!confirm('Zur vorherigen Firmware ('+$('sysPrev').textContent+') zurückkehren? Der ESP startet dabei neu.'))return;
   try{await api('/api/system',{rollback:true});toast('Starte vorherige Firmware …')}catch(e){toast('Fehler: '+e.message)}};
 $('logRefresh').onclick=async()=>{try{LOG=await api('/api/log');if(LOG.seq&&LOG.seq<logClr){logClr=0;try{localStorage.removeItem('sh_logclr')}catch(e){}}logShow()}catch(e){}};
-$('logCls').onclick=()=>{logClr=LOG.seq||0;try{localStorage.setItem('sh_logclr',logClr)}catch(e){}logShow();toast('Anzeige geleert')};
+$('logCls').onclick=()=>{logClr=LOG.seq||0;logClrLine=(LOG.log&&LOG.log[0])||(LOG.prev&&LOG.prev[0])||'';try{localStorage.setItem('sh_logclr',logClr);localStorage.setItem('sh_logclrline',logClrLine)}catch(e){}logShow();toast('Anzeige geleert')};
 $('logCopy').onclick=async()=>{const t=logVisible().concat(logPrev()).join('\n');if(!t){toast('Nichts zum Kopieren');return}
   try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast('Kopiert')};
 $('logSave').onclick=async()=>{await $('logRefresh').onclick();const t=(LOG.log||[]).concat(logPrev()).join('\n');
