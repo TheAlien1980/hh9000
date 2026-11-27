@@ -707,7 +707,7 @@ function mock(p,b){
       if(Math.random()<.3)M.snR.push([t(),1,'34 05 22 1E 07 0E'])}
     const from=b.from||0;return{on:!!M.sniff,oldest:0,frames:M.sniff?M.sniff.frames:0,bad:0,recs:(M.snR||[]).slice(from,from+120),next:Math.min((M.snR||[]).length,from+120)}}
   if(p=='/api/system')return b&&b.rollback?{ok:true}:{fw:'2.2.0 (Demo)',reset:'Einschalten',confirmed:true,rollback:true,prev:'2.1.0 (Nov 24 2026 10:12:44)'};
-  if(p=='/api/log'){M.logN=(M.logN||3)+1;const l=[];for(let i=M.logN;i>0;i--)l.push('23.11. 18:'+pad(i%60)+':00  Demo-Eintrag '+i);return{log:l.slice(0,150),seq:M.logN}}
+  if(p=='/api/log'){M.logN=(M.logN||3)+1;const l=[];for(let i=M.logN;i>0;i--)l.push('23.11. 18:'+pad(i%60)+':00  Demo-Eintrag '+i);return{log:l.slice(0,150),seq:M.logN,prev:['23.11. 07:12:40  Demo: Heizen gestartet (Display)','23.11. 07:12:02  Demo: Start: 3.5.0, Grund: Einschalten','──────── Neustart ────────']}}
   if(p=='/api/unlock'){M.locked=false;M.fault=undefined;return{ok:true,msg:'Sperre aufgehoben – die Heizung kann wieder gestartet werden'}}
   if(p=='/api/fault/ack'){M.fault=undefined;return{ok:true}}
   if(p=='/api/errors')return{ok:true,errors:[{code:'0x02',text:'Kein Start',count:1,detail:{flags:0,count:1,state:0x2e,stateText:'Glühen',temp:-6,voltage:11.94,hours:697,minutes:12}},{code:'0x88',text:'Dosierpumpe Unterbrechung',count:2,raw:'02 88 01'}]};
@@ -1136,8 +1136,13 @@ $('saveSet').onclick=async()=>{
 $('wClear').onclick=async()=>{await api('/api/settings',{clearWebPass:true});toast('Passwortschutz entfernt');loadSettings()};
 // Protokoll: "Leeren" blendet nur bisherige Zeilen aus (wie cls), der ESP behält sie (max. 150 Zeilen)
 let LOG={log:[],seq:0},logClr=0;try{logClr=+localStorage.getItem('sh_logclr')||0}catch(e){}
-function logVisible(){const n=LOG.seq?Math.max(0,LOG.seq-logClr):LOG.log.length;return LOG.log.slice(0,n)}
-function logShow(){const v=logVisible();$('log').textContent=v.join('\n')||(logClr?'(geleert – neue Einträge erscheinen hier)':'–')}
+function logVisible(){
+  // Zeilennummer beginnt nach jedem Neustart (oder auf einem neuen Board) wieder bei 0: alte "Leeren"-Marke verwerfen
+  if(LOG.seq&&logClr>LOG.seq){logClr=0;try{localStorage.removeItem('sh_logclr')}catch(e){}}
+  const n=LOG.seq?Math.max(0,LOG.seq-logClr):LOG.log.length;return LOG.log.slice(0,n)}
+// Zeilen vor dem letzten Neustart (dauerhaft gespeichert) unter einer Trennlinie anhängen
+function logPrev(){return LOG.prev&&LOG.prev.length?['','──── vor dem letzten Neustart ────'].concat(LOG.prev):[]}
+function logShow(){const v=logVisible().concat(logPrev());$('log').textContent=v.join('\n')||(logClr?'(geleert – neue Einträge erscheinen hier)':'–')}
 // Systeminfo: letzter Neustart, vorherige Firmware, Rückfall
 async function loadSys(){try{const r=await api('/api/system');
   $('sysReset').textContent=r.reset||'–';$('sysPrev').textContent=r.prev||(r.rollback?'vorhanden':'keine');
@@ -1147,9 +1152,9 @@ $('sysBack').onclick=async()=>{if(!confirm('Zur vorherigen Firmware ('+$('sysPre
   try{await api('/api/system',{rollback:true});toast('Starte vorherige Firmware …')}catch(e){toast('Fehler: '+e.message)}};
 $('logRefresh').onclick=async()=>{try{LOG=await api('/api/log');if(LOG.seq&&LOG.seq<logClr){logClr=0;try{localStorage.removeItem('sh_logclr')}catch(e){}}logShow()}catch(e){}};
 $('logCls').onclick=()=>{logClr=LOG.seq||0;try{localStorage.setItem('sh_logclr',logClr)}catch(e){}logShow();toast('Anzeige geleert')};
-$('logCopy').onclick=async()=>{const t=logVisible().join('\n');if(!t){toast('Nichts zum Kopieren');return}
+$('logCopy').onclick=async()=>{const t=logVisible().concat(logPrev()).join('\n');if(!t){toast('Nichts zum Kopieren');return}
   try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast('Kopiert')};
-$('logSave').onclick=async()=>{await $('logRefresh').onclick();const t=(LOG.log||[]).join('\n');
+$('logSave').onclick=async()=>{await $('logRefresh').onclick();const t=(LOG.log||[]).concat(logPrev()).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t+'\n'],{type:'text/plain'}));const d=new Date();
   a.download=`hh9000-protokoll-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.txt`;a.click()};
 $('errRead').onclick=async()=>{$('errList').innerHTML='<p class="hint">Lese …</p>';const r=await api('/api/errors');
