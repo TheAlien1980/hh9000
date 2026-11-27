@@ -456,9 +456,11 @@ themeApply();
     <input type="range" id="dpBright" min="10" max="100" step="10">
     <label class="f" for="dpSleep">Display aus nach</label>
     <select id="dpSleep"><option value="10">10 s</option><option value="20">20 s</option><option value="25">25 s</option><option value="30">30 s</option><option value="60">60 s</option><option value="0">nie</option></select>
-    <label class="f" for="dpLed">LED-Ring unter dem Display</label>
-    <select id="dpLed"><option value="1">An</option><option value="2">An, nach 30 s aus</option><option value="0">Aus</option></select>
-    <p class="hint">Gilt für das Display am Gerät und lässt sich dort auch unter Einstellungen ändern. Der LED-Ring leuchtet orange beim Heizen, blau beim Lüften und blinkt rot bei einer Störung. „Nach 30 s aus“: nach jeder Bedienung oder Zustandsänderung 30 s an. Nachts (20–7 Uhr) ist das Display automatisch dunkler.</p>
+    <label class="f" for="dpLed">LED-Ring unter dem Display: aus nach</label>
+    <select id="dpLed"><option value="-1">Aus</option><option value="10">10 s</option><option value="30">30 s</option><option value="60">60 s</option><option value="300">5 min</option><option value="0">immer an</option></select>
+    <label class="f" for="dpLedB">LED-Ring Helligkeit: <b id="dpLedBV">25 %</b></label>
+    <input type="range" id="dpLedB" min="10" max="100" step="10">
+    <p class="hint">Gilt für das Display am Gerät und lässt sich dort auch unter Einstellungen ändern. Der LED-Ring leuchtet orange beim Heizen, blau beim Lüften und blinkt rot bei einer Störung. „Aus nach …“ zählt ab der letzten Bedienung oder Zustandsänderung. Nachts (20–7 Uhr) ist das Display automatisch dunkler.</p>
   </div>
   <div class="card" id="fwCard">
     <h2>Firmware-Update</h2>
@@ -693,7 +695,7 @@ function mock(p,b){
   if(p=='/api/maint/run'){M.maint.due=false;M.mode=M.phase='heat';M.duration=15;M.end=now+15*60000;return{ok:true}}
   if(p=='/api/geocode')return{ok:true,results:[{name:b.q,region:'Hessen, Deutschland',lat:49.96,lon:8.95}]};
   if(p=='/api/schedule'){if(b)MS=b.entries;return{entries:MS,max:12}}
-  if(p=='/api/settings')return b?{ok:true}:{ssid:'',host:'HH9000',mqttEnabled:false,mqttTls:true,mqttPort:8883,mqttBase:'HH9000',webUser:'admin',battProt:true,battType:1,battWarn:12.2,battOff:11.8,wxPlace:'Babenhausen, Hessen, Deutschland',wxLat:49.96,wxLon:8.95,depSource:0,depCurve:[40,35,30,25,20,15,10,5,2,0],depMax:60,depAfter:10,fuelFactor:100,paramCmd:true,maintMode:1,maintDays:30,maintRunMin:15,maintAt:'12:00',display:{bright:80,sleep:25,led:1}};
+  if(p=='/api/settings')return b?{ok:true}:{ssid:'',host:'HH9000',mqttEnabled:false,mqttTls:true,mqttPort:8883,mqttBase:'HH9000',webUser:'admin',battProt:true,battType:1,battWarn:12.2,battOff:11.8,wxPlace:'Babenhausen, Hessen, Deutschland',wxLat:49.96,wxLon:8.95,depSource:0,depCurve:[40,35,30,25,20,15,10,5,2,0],depMax:60,depAfter:10,fuelFactor:100,paramCmd:true,maintMode:1,maintDays:30,maintRunMin:15,maintAt:'12:00',display:{bright:80,sleep:25,ledTime:0,ledBright:30}};
   if(p=='/api/scan'){const res=[];for(let id=b.from;id<=b.to;id++){let v=null;
       if(b.sub==0x30&&id==0x3A)v='30 3A 03 F5';else if(b.sub==0x30&&id==0x11)v='30 11 0'+Math.floor(Math.random()*9)+' 2C';else if(!b.sub&&id==5)v='05 39 31 1A 01 06 40 00 C8';
       res.push([id,v])}return{ok:true,res}}
@@ -806,7 +808,7 @@ function render(){
   // Geräteinfo
   $('devInfo').innerHTML=[['W-Bus',S.online?'verbunden':'keine Antwort'],['Zustand',S.stateText+' (0x'+(S.state>=0?S.state.toString(16):'??')+')'],
     ['Glühstift',(S.glow??0)+' %'],['Dosierpumpe',(S.pump??0)+' Hz'],['Betriebsstunden',S.opHours!=null?S.opHours+' h':'–'],['Starts',S.starts??'–'],
-    ['Telegramme ok/Fehler',S.bus?S.bus.ok+' / '+S.bus.err:'–'],['WLAN',S.wifi?((S.wifi.ssid?S.wifi.ssid+', ':'')+S.wifi.ip+' ('+S.wifi.rssi+' dBm)'):'–'],['MQTT',S.mqtt?'verbunden':'getrennt'],['Firmware',S.fw||'–'],['Batterie',S.batt?(S.batt.type+(S.batt.avg!=null?' · Ø '+fmtV(S.batt.avg):'')+(S.batt.enabled?'':' · Schutz aus')):'–'],['Zugriff',REMOTE?'Fernzugriff über Broker':'lokal im WLAN']]
+    ['Telegramme ok/Fehler',S.bus?S.bus.ok+' / '+S.bus.err:'–'],['WLAN',S.wifi?((S.wifi.ssid?S.wifi.ssid+', ':'')+S.wifi.ip+' ('+S.wifi.rssi+' dBm)'):'–'],['MQTT',S.mqtt?'verbunden':'getrennt'],['Vorherige Firmware',SYS?(SYS.prev||(SYS.rollback?'vorhanden':'keine')):'–'],['Firmware',S.fw||'–'],['Batterie',S.batt?(S.batt.type+(S.batt.avg!=null?' · Ø '+fmtV(S.batt.avg):'')+(S.batt.enabled?'':' · Schutz aus')):'–'],['Zugriff',REMOTE?'Fernzugriff über Broker':'lokal im WLAN']]
     .map(([k,v])=>`<span>${k}</span><b>${v}</b>`).join('');
 }
 function showVlv(){$('vLvl').textContent=vlv;$('vSmall').textContent=vlv;$('vRange').value=vlv}
@@ -826,11 +828,14 @@ async function refresh(){
 
 /* ---------- Steuerung ---------- */
 // Heizen/Lüften: Tippen schaltet ein (und den anderen Modus um), nochmal tippen schaltet aus
+let ctlBusy=false;  // während ein Befehl läuft, weiteres Tippen ignorieren (sonst mehrfach gesendet)
 document.querySelectorAll('.mbtn').forEach(b=>b.onclick=async()=>{
+  if(ctlBusy)return;ctlBusy=true;document.querySelectorAll('.mbtn').forEach(x=>x.style.opacity='.6');
   const m=(S&&S.mode==b.dataset.mode)?'off':b.dataset.mode;
   try{await api('/api/control',{action:m,duration:selDur,target:tgt});if(S)S.mode=m;
     toast(m=='off'?(b.dataset.mode=='heat'?'Heizen':'Lüften')+' aus':(m=='heat'?'Heizen':'Lüften')+' · '+durLabel(selDur))}
   catch(e){toast('Fehler: '+e.message)}
+  ctlBusy=false;document.querySelectorAll('.mbtn').forEach(x=>x.style.opacity='');
   setTimeout(refresh,300)});
 let tgtTimer;
 function changeTgt(v){tgt=Math.max(5,Math.min(35,v));showTgt();tgtLock=Date.now()+4000;clearTimeout(tgtTimer);
@@ -958,7 +963,7 @@ async function loadSettings(){try{const s=await api('/api/settings');
   $('mMode').value=s.maintMode??1;$('mDays').value=s.maintDays??30;$('mRun').value=s.maintRunMin??15;$('mAt').value=s.maintAt||'12:00';mAutoUI();
   $('bProt').checked=s.battProt!==false;$('bType').value=s.battType??1;$('bWarn').value=(s.battWarn??12.2).toFixed(1);$('bOff').value=(s.battOff??11.8).toFixed(1);bInfo();
   $('wPass').placeholder=s.webPassSet?'gesetzt – leer = unverändert':'leer = kein Schutz';
-  $('dpCard').hidden=!s.display;if(s.display){$('dpBright').value=s.display.bright;$('dpBrightV').textContent=s.display.bright+' %';$('dpSleep').value=s.display.sleep;$('dpLed').value=s.display.led}}catch(e){}}
+  $('dpCard').hidden=!s.display;if(s.display){$('dpBright').value=s.display.bright;$('dpBrightV').textContent=s.display.bright+' %';$('dpSleep').value=s.display.sleep;$('dpLed').value=s.display.ledTime??0;$('dpLedB').value=s.display.ledBright??25;$('dpLedBV').textContent=(s.display.ledBright??25)+' %'}}catch(e){}}
 const BPRE={0:[12.2,11.9,'Blei (Nass), Ruhespannung: 12,7 V voll · 12,2 V ≈ 50 % (tiefer schadet bei häufiger Entladung) · 11,9 V ≈ 20 %.'],
   1:[12.2,11.8,'AGM, Ruhespannung: 12,8 V voll · 12,2 V ≈ 50 % · 11,8 V ≈ 15 %. Verträgt etwas tiefere Entladung als Nass-Blei.'],
   2:[12.2,11.8,'Gel, Ruhespannung: 12,8 V voll · 12,2 V ≈ 50 % · 11,8 V ≈ 15 %.'],
@@ -1126,9 +1131,10 @@ $('bType').onchange=()=>{const t=+$('bType').value;if(BPRE[t][0]!=null){$('bWarn
 ['bWarn','bOff'].forEach(id=>{$(id).oninput=()=>{$('bType').value=4;bInfo()};$(id).onchange=bSave});
 $('bProt').onchange=bSave;
 /* ---------- Drehregler-Display (nur CrowPanel) ---------- */
-function dpSave(){autoSave('disp',()=>({display:{bright:+$('dpBright').value,sleep:+$('dpSleep').value,led:+$('dpLed').value}}),'Display-Einstellungen gespeichert')}
+function dpSave(){autoSave('disp',()=>({display:{bright:+$('dpBright').value,sleep:+$('dpSleep').value,ledTime:+$('dpLed').value,ledBright:+$('dpLedB').value}}),'Display-Einstellungen gespeichert')}
 $('dpBright').oninput=()=>{$('dpBrightV').textContent=$('dpBright').value+' %';dpSave()};
 $('dpSleep').onchange=dpSave;$('dpLed').onchange=dpSave;
+$('dpLedB').oninput=()=>{$('dpLedBV').textContent=$('dpLedB').value+' %';dpSave()};
 $('saveSet').onclick=async()=>{
   const b={ssid:$('sSsid').value,pass:$('sPass').value,ssid2:$('sSsid2').value,pass2:$('sPass2').value,mqttTls:$('mTls').checked,host:$('sHost').value,mqttEnabled:$('mEn').checked,mqttHost:$('mHost').value,mqttPort:+$('mPort').value,
     mqttBase:$('mBase').value,mqttUser:$('mUser').value,mqttPass:$('mPass').value,webUser:$('wUser').value,webPass:$('wPass').value};
@@ -1147,7 +1153,8 @@ function logPrev(){let p=LOG.prev||[];
   return p.length?['','──── vor dem letzten Neustart ────'].concat(p):[]}
 function logShow(){const v=logVisible().concat(logPrev());$('log').textContent=v.join('\n')||(logClr||logClrLine?'(geleert – neue Einträge erscheinen hier)':'–')}
 // Systeminfo: letzter Neustart, vorherige Firmware, Rückfall
-async function loadSys(){try{const r=await api('/api/system');
+let SYS=null;
+async function loadSys(){try{const r=await api('/api/system');SYS=r;if(S)render();
   $('sysReset').textContent=r.reset||'–';$('sysPrev').textContent=r.prev||(r.rollback?'vorhanden':'keine');
   $('sysBack').hidden=!r.rollback;
   $('sysHint').textContent=(r.confirmed===false?'Diese Firmware ist neu und wird nach 90 s fehlerfreiem Lauf bestätigt. ':'')+'Stürzt eine neue Firmware vor der Bestätigung dreimal ab, startet automatisch wieder die vorherige. Hängt der ESP länger als 60 s, startet er neu (Watchdog).'}catch(e){}}
