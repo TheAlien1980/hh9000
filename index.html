@@ -72,6 +72,9 @@ header h1{color:var(--fire-b);padding:4px 2px 2px;margin:-4px -2px -2px;
 .conn{flex:none;display:flex;align-items:center;gap:8px;color:var(--mut);font-size:13px}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--dim)}
 .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}.dot.off{background:var(--bad)}
+.ind{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--dim);cursor:help}
+@media (max-width:520px){.ind{font-size:0;gap:0}.conn{gap:6px}}  /* Handy: nur die Punkte (Antippen erklärt sie) */
+.conn{cursor:pointer}
 main{max-width:var(--app-w);margin:0 auto;padding:0 14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:12px 0}
 .card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:0 0 12px;display:flex;justify-content:space-between;align-items:center}
@@ -261,7 +264,7 @@ themeApply();
 <body>
 <header>
   <div class="brand"><h1>Heizmeister Hagena 9000</h1><svg class="xhat" id="xhat" hidden viewBox="0 0 40 34" aria-hidden="true"><path d="M3 27 C8 12 20 2 31 6 C36 8 37 14 35 17 C31 12 25 13 22 16 C19 20 18 24 17 27 Z" fill="#d32f2f"/><circle cx="35" cy="18" r="4.2" fill="#fff"/><rect x="1" y="25" width="20" height="7" rx="3.5" fill="#fff"/></svg></div>
-  <div class="hright"><div class="conn"><span class="dot" id="dot"></span><span id="clock">--:--</span></div><button class="ver" id="ver" hidden title="Firmware-Version"></button></div>
+  <div class="hright"><div class="conn"><span class="ind" id="indBus" title="Heizung (W-Bus)"><span class="dot" id="dotBus"></span>W-Bus</span><span class="ind" id="indNet" title="MQTT"><span class="dot" id="dotNet"></span>MQTT</span><span id="clock">--:--</span></div><button class="ver" id="ver" hidden title="Firmware-Version"></button></div>
 </header>
 
 <main>
@@ -456,10 +459,10 @@ themeApply();
     <input type="range" id="dpBright" min="10" max="100" step="10">
     <label class="f" for="dpSleep">Display aus nach</label>
     <select id="dpSleep"><option value="10">10 s</option><option value="20">20 s</option><option value="25">25 s</option><option value="30">30 s</option><option value="60">60 s</option><option value="0">nie</option></select>
-    <label class="f" for="dpLed">LED-Ring unter dem Display: aus nach</label>
-    <select id="dpLed"><option value="-1">Aus</option><option value="10">10 s</option><option value="30">30 s</option><option value="60">60 s</option><option value="300">5 min</option><option value="0">immer an</option></select>
     <label class="f" for="dpLedB">LED-Ring Helligkeit: <b id="dpLedBV">25 %</b></label>
     <input type="range" id="dpLedB" min="10" max="100" step="10">
+    <label class="f" for="dpLed">LED-Ring unter dem Display: aus nach</label>
+    <select id="dpLed"><option value="-1">Aus</option><option value="10">10 s</option><option value="30">30 s</option><option value="60">60 s</option><option value="300">5 min</option><option value="0">immer an</option></select>
     <p class="hint">Gilt für das Display am Gerät und lässt sich dort auch unter Einstellungen ändern. Der LED-Ring leuchtet orange beim Heizen, blau beim Lüften und blinkt rot bei einer Störung. „Aus nach …“ zählt ab der letzten Bedienung oder Zustandsänderung. Nachts (20–7 Uhr) ist das Display automatisch dunkler.</p>
   </div>
   <div class="card" id="fwCard">
@@ -718,18 +721,29 @@ function mock(p,b){
 
 /* ---------- Rendering ---------- */
 function banner(t,cls){const b=$('banner');b.className='banner'+(cls?' '+cls:'');b.style.display='block';b.textContent=t}
+// Statuspunkte oben rechts: W-Bus (antwortet die Heizung?) und MQTT (lokal: Verbindung des ESP zum Broker;
+// im Fernzugriff: kommen aktuelle Daten über den Broker an?). '' = grau (unbekannt bzw. MQTT aus)
+function setDots(bus,net){
+  $('dotBus').className='dot '+bus;$('dotNet').className='dot '+net;
+  $('indBus').title=bus=='on'?'W-Bus: Heizung antwortet':bus=='off'?'W-Bus: keine Antwort der Heizung':'W-Bus: unbekannt (keine aktuellen Daten vom ESP)';
+  $('indNet').title=REMOTE?(net=='on'?'MQTT: aktuelle Daten vom ESP über den Broker':'MQTT: keine Verbindung zum ESP über den Broker')
+    :(net=='on'?'MQTT: ESP ist mit dem Broker verbunden (Fernzugriff/Home Assistant)':net=='off'?'MQTT: ESP nicht mit dem Broker verbunden (Internet?)':'MQTT: ausgeschaltet');
+  $('indBus').setAttribute('aria-label',$('indBus').title);$('indNet').setAttribute('aria-label',$('indNet').title);
+}
+$('indBus').parentNode.onclick=()=>toast($('indBus').title+' · '+$('indNet').title);
 function hm(ts){const d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes())}
 function render(){
   const b=$('banner');
   if(REMOTE){
     if(!RC)return;
-    if(brokerState!='ok'){banner(brokerState=='error'?'Keine Verbindung zum Broker – Internet/Zugangsdaten prüfen.':'Verbinde mit dem Broker …','demo');$('dot').className='dot off';if(!S)return}
-    else if(espOnline===false){banner('ESP32 ist offline (Auto ohne Strom oder Internet?)'+(lastStateAt?' – letzter Stand '+hm(lastStateAt)+' Uhr.':''));$('dot').className='dot off';if(!S)return}
+    if(brokerState!='ok'){banner(brokerState=='error'?'Keine Verbindung zum Broker – Internet/Zugangsdaten prüfen.':'Verbinde mit dem Broker …','demo');setDots('off','off');if(!S)return}
+    else if(espOnline===false){banner('ESP32 ist offline (Auto ohne Strom oder Internet?)'+(lastStateAt?' – letzter Stand '+hm(lastStateAt)+' Uhr.':''));setDots('','off');if(!S)return}
     else if(!S){banner('Warte auf Daten vom ESP32 …','demo');return}
   }
   if(!S)return;
   const stale=REMOTE&&lastStateAt&&Date.now()-lastStateAt>60000;
-  $('dot').className='dot '+(S.online&&(!REMOTE||(brokerState=='ok'&&espOnline!==false&&!stale))?'on':'off');
+  if(REMOTE){const fresh=brokerState=='ok'&&espOnline!==false&&!stale;setDots(fresh?(S.online?'on':'off'):'',fresh?'on':'off')}
+  else setDots(S.online?'on':'off',S.mqttEn===false?'':(S.mqtt?'on':'off'));
   $('clock').textContent=S.timeValid?S.time:'--:--';
   const age=REMOTE&&lastStateAt?Math.round((Date.now()-lastStateAt)/1000):0;
   if(REMOTE&&(brokerState!='ok'||espOnline===false)){}
@@ -823,7 +837,7 @@ function renderDur(){
 async function refresh(){
   if(REMOTE){render();return}
   try{S=await api('/api/status');render()}
-  catch(e){if(!S&&!demo&&(location.protocol=='file:'||location.search.includes('demo'))){demo=true;S=await api('/api/status');render();loadSched();loadSettings()}else{$('dot').className='dot off'}}
+  catch(e){if(!S&&!demo&&(location.protocol=='file:'||location.search.includes('demo'))){demo=true;S=await api('/api/status');render();loadSched();loadSettings()}else{setDots('','')}}
 }
 
 /* ---------- Steuerung ---------- */
